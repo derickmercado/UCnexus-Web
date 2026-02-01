@@ -11,6 +11,10 @@ html {
     overflow-x: hidden;
 }
 
+:root {
+    --navbar-height: 100px;
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
     background: #f5f7fa;
@@ -218,25 +222,27 @@ body {
 /* ===== LAYOUT: DASHBOARD WRAPPER ===== */
 .dashboard-wrapper {
     display: flex;
-    min-height: calc(100vh - 100px);
+    min-height: calc(100vh - var(--navbar-height));
     background: #f5f7fa;
     overflow-x: hidden;
+    position: relative;
 }
 
-/* ===== SIDEBAR - FIXED POSITIONING ===== */
+/* ===== SIDEBAR - STICKY POSITIONING ===== */
 .sidebar {
     width: 240px;
+    min-width: 240px;
     background: white;
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
     display: flex;
     flex-direction: column;
-    position: fixed;
-    top: 100px;
-    left: 0;
-    bottom: 0;
+    position: sticky;
+    top: 0; /* Sticks to top when scrolling */
+    height: 100vh;
     z-index: 100;
     overflow-y: auto;
     overflow-x: hidden;
+    flex-shrink: 0;
 }
 
 .sidebar-header {
@@ -305,11 +311,11 @@ body {
 /* ===== MAIN CONTENT ===== */
 .main-content {
     flex: 1;
-    margin-left: 240px;
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 100px);
+    min-height: calc(100vh - var(--navbar-height));
     overflow-x: hidden;
+    min-width: 0; /* Prevent flex item from overflowing */
 }
 
 .top-header {
@@ -319,9 +325,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 50;
+    flex-shrink: 0;
 }
 
 .top-header h1 {
@@ -410,9 +414,7 @@ body {
 @media (max-width: 1024px) {
     .sidebar {
         width: 200px;
-    }
-    .main-content {
-        margin-left: 200px;
+        min-width: 200px;
     }
 }
 
@@ -425,6 +427,7 @@ body {
     .sidebar {
         position: relative;
         width: 100%;
+        min-width: 100%;
         top: 0;
         height: auto;
         flex-direction: row;
