@@ -1,5 +1,13 @@
 <?php
 // pages/schedule.php
+require_once __DIR__ . '/../data/rooms.php';
+require_once __DIR__ . '/../data/schedules.php';
+
+// Get room options for dropdown
+$roomOptions = getRoomsAsOptions();
+$departments = getDepartments();
+$timeSlots = getTimeSlots();
+
 // Initialize schedule data (would come from database in production)
 if (!isset($_SESSION['schedules'])) {
     $_SESSION['schedules'] = [
@@ -156,9 +164,9 @@ usort($schedules, function($a, $b) {
                         <label>Room</label>
                         <select name="scheduleRoom" required>
                             <option value="">Select a room</option>
-                            <option value="Room 101">Room 101</option>
-                            <option value="Room 102">Room 102</option>
-                            <option value="Lab A">Lab A</option>
+                            <?php foreach ($roomOptions as $option): ?>
+                            <option value="<?php echo htmlspecialchars($option['label']); ?>"><?php echo htmlspecialchars($option['label']); ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">

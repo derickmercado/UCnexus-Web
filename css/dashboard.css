@@ -34,6 +34,101 @@
     opacity: 0.8;
 }
 
+/* Buildings Overview */
+.buildings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.building-card {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.building-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.building-card h4 {
+    color: #333;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.building-card p {
+    color: #666;
+    font-size: 13px;
+}
+
+/* Room Types Grid */
+.room-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.room-type-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.type-name {
+    color: #333;
+    font-size: 13px;
+}
+
+.type-count {
+    background: #1e7e34;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Today's Schedule List */
+.schedule-list {
+    margin-top: 15px;
+}
+
+.schedule-item {
+    display: flex;
+    gap: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border-left: 4px solid #1e7e34;
+}
+
+.schedule-time {
+    min-width: 140px;
+    color: #1e7e34;
+    font-weight: 600;
+}
+
+.schedule-details {
+    flex: 1;
+}
+
+.schedule-details strong {
+    color: #333;
+}
+
+.schedule-details small {
+    color: #666;
+}
+
 /* Quick Actions */
 .quick-actions {
     background: white;
@@ -58,10 +153,31 @@
     .dashboard-grid {
         grid-template-columns: 1fr 1fr;
     }
+    
+    .buildings-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .schedule-item {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .schedule-time {
+        min-width: auto;
+    }
 }
 
 @media (max-width: 600px) {
     .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .buildings-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .room-types-grid {
         grid-template-columns: 1fr;
     }
 
