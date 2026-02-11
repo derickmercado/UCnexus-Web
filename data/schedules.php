@@ -1,197 +1,42 @@
 <?php
 /**
- * Assignments/Schedules Data for UC Nexus
- * Handles class schedules and room assignments
+ * Schedules Data for UC Nexus
+ * Database-connected version
  */
 
-// Sample schedule data (this would typically come from a database)
-$SCHEDULES = [
-    [
-        'id' => 1,
-        'classCode' => 'IT101',
-        'className' => 'Introduction to Computing',
-        'roomId' => 'room-M303',
-        'room' => 'M303 - Computer Laboratory',
-        'instructor' => 'Dr. Maria Santos',
-        'department' => 'CCS',
-        'classSize' => 35,
-        'days' => ['monday', 'wednesday'],
-        'startTime' => '07:30',
-        'endTime' => '08:50',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ],
-    [
-        'id' => 2,
-        'classCode' => 'IT102',
-        'className' => 'Web Development Fundamentals',
-        'roomId' => 'room-M304',
-        'room' => 'M304 - Computer Laboratory',
-        'instructor' => 'Prof. Juan Cruz',
-        'department' => 'CCS',
-        'classSize' => 38,
-        'days' => ['tuesday', 'thursday'],
-        'startTime' => '08:50',
-        'endTime' => '10:10',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ],
-    [
-        'id' => 3,
-        'classCode' => 'CE201',
-        'className' => 'Structural Analysis',
-        'roomId' => 'room-S213',
-        'room' => 'S213 - CEA Computer Laboratory',
-        'instructor' => 'Engr. Pedro Reyes',
-        'department' => 'CEA',
-        'classSize' => 28,
-        'days' => ['monday', 'wednesday', 'friday'],
-        'startTime' => '10:10',
-        'endTime' => '11:30',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ],
-    [
-        'id' => 4,
-        'classCode' => 'CHEM101',
-        'className' => 'General Chemistry',
-        'roomId' => 'room-S107',
-        'room' => 'S107 - Chemistry Laboratory',
-        'instructor' => 'Dr. Ana Lopez',
-        'department' => 'CAS',
-        'classSize' => 35,
-        'days' => ['tuesday', 'thursday'],
-        'startTime' => '11:30',
-        'endTime' => '12:50',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ],
-    [
-        'id' => 5,
-        'classCode' => 'BIO101',
-        'className' => 'General Biology',
-        'roomId' => 'room-S229',
-        'room' => 'S229 - Biology Laboratory',
-        'instructor' => 'Dr. Carlos Garcia',
-        'department' => 'CAS',
-        'classSize' => 25,
-        'days' => ['monday', 'wednesday'],
-        'startTime' => '12:50',
-        'endTime' => '14:10',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ],
-    [
-        'id' => 6,
-        'classCode' => 'PE101',
-        'className' => 'Physical Education 1',
-        'roomId' => 'room-G101',
-        'room' => 'G101 - Gymnasium',
-        'instructor' => 'Coach Roberto Tan',
-        'department' => 'PE',
-        'classSize' => 50,
-        'days' => ['friday'],
-        'startTime' => '14:10',
-        'endTime' => '15:30',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ],
-    [
-        'id' => 7,
-        'classCode' => 'IT201',
-        'className' => 'Object-Oriented Programming',
-        'roomId' => 'room-M305',
-        'room' => 'M305 - Computer Laboratory',
-        'instructor' => 'Prof. Elena Mendoza',
-        'department' => 'CCS',
-        'classSize' => 40,
-        'days' => ['monday', 'wednesday'],
-        'startTime' => '15:30',
-        'endTime' => '16:50',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ],
-    [
-        'id' => 8,
-        'classCode' => 'PHYS101',
-        'className' => 'Physics 1',
-        'roomId' => 'room-S016',
-        'room' => 'S016 - Physics Lab',
-        'instructor' => 'Dr. Antonio Ramos',
-        'department' => 'CAS',
-        'classSize' => 45,
-        'days' => ['tuesday', 'thursday'],
-        'startTime' => '16:50',
-        'endTime' => '18:10',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ],
-    [
-        'id' => 9,
-        'classCode' => 'HM101',
-        'className' => 'Introduction to Hospitality',
-        'roomId' => 'room-F501',
-        'room' => 'F501 - Classroom/Lecture Hall',
-        'instructor' => 'Ms. Sofia Villanueva',
-        'department' => 'CHTM',
-        'classSize' => 48,
-        'days' => ['monday', 'wednesday', 'friday'],
-        'startTime' => '08:50',
-        'endTime' => '10:10',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ],
-    [
-        'id' => 10,
-        'classCode' => 'EDUC101',
-        'className' => 'Principles of Teaching',
-        'roomId' => 'room-N201',
-        'room' => 'N201 - Classroom/Lecture Hall',
-        'instructor' => 'Dr. Isabella Fernandez',
-        'department' => 'CED',
-        'classSize' => 38,
-        'days' => ['tuesday', 'thursday', 'saturday'],
-        'startTime' => '07:30',
-        'endTime' => '08:50',
-        'semester' => '2nd Semester',
-        'schoolYear' => '2025-2026'
-    ]
-];
-
-// Departments list
-$DEPARTMENTS = [
-    'CCS' => 'College of Computer Studies',
-    'CEA' => 'College of Engineering and Architecture',
-    'CAS' => 'College of Arts and Sciences',
-    'CHTM' => 'College of Hospitality and Tourism Management',
-    'CED' => 'College of Education',
-    'CBA' => 'College of Business Administration',
-    'CON' => 'College of Nursing',
-    'PE' => 'Physical Education',
-    'SHS' => 'Senior High School',
-    'JHS' => 'Junior High School'
-];
+require_once __DIR__ . '/../config/database.php';
 
 // =============== HELPER FUNCTIONS ===============
 
 /**
- * Get all schedules
+ * Get all schedules from database
  */
 function getAllSchedules() {
-    global $SCHEDULES;
-    return $SCHEDULES;
+    if (!isDatabaseSetup()) {
+        return [];
+    }
+    
+    $schedules = dbFetchAll("SELECT * FROM schedules WHERE is_active = 1 ORDER BY COALESCE(schedule_date, '9999-12-31'), start_time");
+    
+    return array_map(function($s) {
+        return formatScheduleFromDB($s);
+    }, $schedules);
 }
 
 /**
  * Get schedule by ID
  */
 function getScheduleById($id) {
-    global $SCHEDULES;
-    foreach ($SCHEDULES as $schedule) {
-        if ($schedule['id'] == $id) {
-            return $schedule;
-        }
+    if (!isDatabaseSetup()) {
+        return null;
     }
+    
+    $schedule = dbFetchOne("SELECT * FROM schedules WHERE id = ?", [$id]);
+    
+    if ($schedule) {
+        return formatScheduleFromDB($schedule);
+    }
+    
     return null;
 }
 
@@ -199,121 +44,230 @@ function getScheduleById($id) {
  * Get schedules by room
  */
 function getSchedulesByRoom($roomId) {
-    global $SCHEDULES;
-    return array_filter($SCHEDULES, function($schedule) use ($roomId) {
-        return $schedule['roomId'] === $roomId;
-    });
+    if (!isDatabaseSetup()) {
+        return [];
+    }
+    
+    $schedules = dbFetchAll(
+        "SELECT * FROM schedules WHERE room_id = ? AND is_active = 1 ORDER BY schedule_date, start_time",
+        [$roomId]
+    );
+    
+    return array_map(function($s) {
+        return formatScheduleFromDB($s);
+    }, $schedules);
 }
 
 /**
  * Get schedules by day
  */
 function getSchedulesByDay($day) {
-    global $SCHEDULES;
-    return array_filter($SCHEDULES, function($schedule) use ($day) {
-        return in_array(strtolower($day), array_map('strtolower', $schedule['days']));
-    });
+    if (!isDatabaseSetup()) {
+        return [];
+    }
+    
+    $day = strtolower($day);
+    $schedules = dbFetchAll(
+        "SELECT * FROM schedules WHERE is_active = 1 AND LOWER(days) LIKE ? ORDER BY start_time",
+        ['%' . $day . '%']
+    );
+    
+    return array_map(function($s) {
+        return formatScheduleFromDB($s);
+    }, $schedules);
+}
+
+/**
+ * Get schedules by date
+ */
+function getSchedulesByDate($date) {
+    if (!isDatabaseSetup()) {
+        return [];
+    }
+    
+    $schedules = dbFetchAll(
+        "SELECT * FROM schedules WHERE schedule_date = ? AND is_active = 1 ORDER BY start_time",
+        [$date]
+    );
+    
+    return array_map(function($s) {
+        return formatScheduleFromDB($s);
+    }, $schedules);
 }
 
 /**
  * Get schedules by department
  */
 function getSchedulesByDepartment($department) {
-    global $SCHEDULES;
-    return array_filter($SCHEDULES, function($schedule) use ($department) {
-        return $schedule['department'] === $department;
-    });
+    if (!isDatabaseSetup()) {
+        return [];
+    }
+    
+    $schedules = dbFetchAll(
+        "SELECT * FROM schedules WHERE department_id = ? AND is_active = 1 ORDER BY schedule_date, start_time",
+        [$department]
+    );
+    
+    return array_map(function($s) {
+        return formatScheduleFromDB($s);
+    }, $schedules);
 }
 
 /**
  * Get schedules by instructor
  */
 function getSchedulesByInstructor($instructor) {
-    global $SCHEDULES;
-    $instructor = strtolower($instructor);
-    return array_filter($SCHEDULES, function($schedule) use ($instructor) {
-        return strpos(strtolower($schedule['instructor']), $instructor) !== false;
-    });
+    if (!isDatabaseSetup()) {
+        return [];
+    }
+    
+    $schedules = dbFetchAll(
+        "SELECT * FROM schedules WHERE instructor LIKE ? AND is_active = 1 ORDER BY schedule_date, start_time",
+        ['%' . $instructor . '%']
+    );
+    
+    return array_map(function($s) {
+        return formatScheduleFromDB($s);
+    }, $schedules);
 }
 
 /**
  * Check if a room is available at a specific time slot
  */
-function isRoomAvailable($roomId, $day, $startTime, $endTime) {
-    global $SCHEDULES;
-    
-    foreach ($SCHEDULES as $schedule) {
-        if ($schedule['roomId'] !== $roomId) continue;
-        if (!in_array(strtolower($day), array_map('strtolower', $schedule['days']))) continue;
-        
-        // Check time overlap
-        $schedStart = strtotime($schedule['startTime']);
-        $schedEnd = strtotime($schedule['endTime']);
-        $checkStart = strtotime($startTime);
-        $checkEnd = strtotime($endTime);
-        
-        // If times overlap, room is not available
-        if ($checkStart < $schedEnd && $checkEnd > $schedStart) {
-            return false;
-        }
+function isRoomAvailable($roomId, $day, $startTime, $endTime, $excludeScheduleId = null) {
+    if (!isDatabaseSetup()) {
+        return true;
     }
     
-    return true;
+    $day = strtolower($day);
+    
+    $sql = "SELECT COUNT(*) as count FROM schedules 
+            WHERE room_id = ? 
+            AND is_active = 1 
+            AND LOWER(days) LIKE ?
+            AND (
+                (start_time < ? AND end_time > ?) OR
+                (start_time < ? AND end_time > ?) OR
+                (start_time >= ? AND end_time <= ?)
+            )";
+    
+    $params = [
+        $roomId,
+        '%' . $day . '%',
+        $endTime, $startTime,
+        $endTime, $startTime,
+        $startTime, $endTime
+    ];
+    
+    if ($excludeScheduleId) {
+        $sql .= " AND id != ?";
+        $params[] = $excludeScheduleId;
+    }
+    
+    $result = dbFetchOne($sql, $params);
+    
+    return (int)$result['count'] === 0;
 }
 
 /**
  * Get total scheduled classes
  */
 function getTotalScheduledClasses() {
-    global $SCHEDULES;
-    return count($SCHEDULES);
+    if (!isDatabaseSetup()) {
+        return 0;
+    }
+    
+    $result = dbFetchOne("SELECT COUNT(*) as count FROM schedules WHERE is_active = 1");
+    return (int)$result['count'];
 }
 
 /**
  * Get schedules for today
  */
 function getTodaySchedules() {
-    $today = strtolower(date('l')); // Get current day name
-    return getSchedulesByDay($today);
-}
-
-/**
- * Get upcoming schedules (within next 7 days)
- */
-function getUpcomingSchedules() {
-    global $SCHEDULES;
-    $upcoming = [];
-    $currentTime = date('H:i');
-    $today = strtolower(date('l'));
-    
-    // Simple approach: get all schedules that haven't ended today
-    foreach ($SCHEDULES as $schedule) {
-        if (in_array($today, array_map('strtolower', $schedule['days']))) {
-            if ($schedule['endTime'] > $currentTime) {
-                $upcoming[] = $schedule;
-            }
-        }
+    if (!isDatabaseSetup()) {
+        return [];
     }
     
-    return $upcoming;
+    $today = date('Y-m-d');
+    $dayName = strtolower(date('l'));
+    
+    // Include today's date OR recurring schedules (NULL date with matching day name)
+    $schedules = dbFetchAll(
+        "SELECT * FROM schedules 
+         WHERE is_active = 1 
+         AND (schedule_date = ? OR (schedule_date IS NULL AND LOWER(days) LIKE ?))
+         ORDER BY start_time",
+        [$today, '%' . $dayName . '%']
+    );
+    
+    return array_map(function($s) {
+        return formatScheduleFromDB($s);
+    }, $schedules);
 }
 
 /**
- * Get departments list
+ * Get upcoming schedules
+ */
+function getUpcomingSchedules() {
+    if (!isDatabaseSetup()) {
+        return [];
+    }
+    
+    $today = date('Y-m-d');
+    $currentTime = date('H:i:s');
+    
+    // Include schedules with NULL dates (recurring), future dates, or today with end time not passed
+    $schedules = dbFetchAll(
+        "SELECT * FROM schedules 
+         WHERE is_active = 1 
+         AND (schedule_date IS NULL OR schedule_date >= ? OR (schedule_date = ? AND end_time > ?))
+         ORDER BY COALESCE(schedule_date, '9999-12-31'), start_time
+         LIMIT 10",
+        [$today, $today, $currentTime]
+    );
+    
+    return array_map(function($s) {
+        return formatScheduleFromDB($s);
+    }, $schedules);
+}
+
+/**
+ * Get departments list from database
  */
 function getDepartments() {
-    global $DEPARTMENTS;
-    return $DEPARTMENTS;
+    if (!isDatabaseSetup()) {
+        return [];
+    }
+    
+    $departments = dbFetchAll("SELECT id, name FROM departments ORDER BY name");
+    $result = [];
+    
+    foreach ($departments as $dept) {
+        $result[$dept['id']] = $dept['name'];
+    }
+
+    return $result;
 }
 
 /**
  * Get schedule statistics
  */
 function getScheduleStatistics() {
-    global $SCHEDULES, $DEPARTMENTS;
+    if (!isDatabaseSetup()) {
+        return [
+            'total' => 0,
+            'byDepartment' => [],
+            'byDay' => [
+                'monday' => 0, 'tuesday' => 0, 'wednesday' => 0,
+                'thursday' => 0, 'friday' => 0, 'saturday' => 0
+            ],
+            'totalStudents' => 0
+        ];
+    }
     
     $stats = [
-        'total' => count($SCHEDULES),
+        'total' => 0,
         'byDepartment' => [],
         'byDay' => [
             'monday' => 0, 'tuesday' => 0, 'wednesday' => 0,
@@ -322,24 +276,27 @@ function getScheduleStatistics() {
         'totalStudents' => 0
     ];
     
-    foreach ($SCHEDULES as $schedule) {
-        // Count by department
-        $dept = $schedule['department'];
-        if (!isset($stats['byDepartment'][$dept])) {
-            $stats['byDepartment'][$dept] = 0;
-        }
-        $stats['byDepartment'][$dept]++;
-        
-        // Count by day
-        foreach ($schedule['days'] as $day) {
-            $day = strtolower($day);
+    // Get totals
+    $totals = dbFetchOne("SELECT COUNT(*) as total, COALESCE(SUM(class_size), 0) as students FROM schedules WHERE is_active = 1");
+    $stats['total'] = (int)$totals['total'];
+    $stats['totalStudents'] = (int)$totals['students'];
+    
+    // Get by department
+    $byDept = dbFetchAll("SELECT department_id, COUNT(*) as count FROM schedules WHERE is_active = 1 AND department_id IS NOT NULL GROUP BY department_id");
+    foreach ($byDept as $row) {
+        $stats['byDepartment'][$row['department_id']] = (int)$row['count'];
+    }
+    
+    // Get by day (count schedules that have each day in their days field)
+    $schedules = dbFetchAll("SELECT days FROM schedules WHERE is_active = 1");
+    foreach ($schedules as $schedule) {
+        $days = explode(',', strtolower($schedule['days'] ?? ''));
+        foreach ($days as $day) {
+            $day = trim($day);
             if (isset($stats['byDay'][$day])) {
                 $stats['byDay'][$day]++;
             }
         }
-        
-        // Total students
-        $stats['totalStudents'] += $schedule['classSize'];
     }
     
     return $stats;
@@ -349,6 +306,10 @@ function getScheduleStatistics() {
  * Format days array to string
  */
 function formatDays($days) {
+    if (is_string($days)) {
+        $days = explode(',', $days);
+    }
+    
     $dayAbbrev = [
         'monday' => 'M', 'tuesday' => 'T', 'wednesday' => 'W',
         'thursday' => 'Th', 'friday' => 'F', 'saturday' => 'S'
@@ -356,7 +317,7 @@ function formatDays($days) {
     
     $formatted = [];
     foreach ($days as $day) {
-        $day = strtolower($day);
+        $day = strtolower(trim($day));
         if (isset($dayAbbrev[$day])) {
             $formatted[] = $dayAbbrev[$day];
         }
@@ -370,4 +331,146 @@ function formatDays($days) {
  */
 function formatTimeRange($startTime, $endTime) {
     return date('g:i A', strtotime($startTime)) . ' - ' . date('g:i A', strtotime($endTime));
+}
+
+/**
+ * Add a new schedule to database
+ */
+function addSchedule($data) {
+    if (!isDatabaseSetup()) {
+        return false;
+    }
+    
+    $days = is_array($data['days'] ?? null) ? implode(',', $data['days']) : ($data['days'] ?? '');
+    
+    // Convert empty strings to null for foreign keys
+    $departmentId = !empty($data['department']) ? $data['department'] : null;
+    $roomId = !empty($data['roomId']) ? $data['roomId'] : null;
+    $scheduleDate = !empty($data['date']) ? $data['date'] : null;
+    $hasConflict = !empty($data['hasConflict']) ? 1 : 0;
+    $conflictWith = !empty($data['conflictWith']) ? $data['conflictWith'] : null;
+    
+    $sql = "INSERT INTO schedules (class_code, class_name, room_id, room_display, instructor, department_id, class_size, schedule_date, start_time, end_time, days, semester, school_year, has_conflict, conflict_with) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    $id = dbInsert($sql, [
+        $data['classCode'] ?? '',
+        $data['className'] ?? '',
+        $roomId,
+        $data['room'] ?? '',
+        $data['instructor'] ?? '',
+        $departmentId,
+        $data['classSize'] ?? 0,
+        $scheduleDate,
+        $data['startTime'] ?? '00:00',
+        $data['endTime'] ?? '00:00',
+        $days,
+        $data['semester'] ?? '',
+        $data['schoolYear'] ?? '',
+        $hasConflict,
+        $conflictWith
+    ]);
+    
+    return $id;
+}
+
+/**
+ * Update schedule in database
+ */
+function updateSchedule($scheduleId, $data) {
+    if (!isDatabaseSetup()) {
+        return false;
+    }
+    
+    $days = is_array($data['days'] ?? null) ? implode(',', $data['days']) : ($data['days'] ?? '');
+    
+    // Convert empty strings to null for foreign keys
+    $departmentId = !empty($data['department']) ? $data['department'] : null;
+    $roomId = !empty($data['roomId']) ? $data['roomId'] : null;
+    $scheduleDate = !empty($data['date']) ? $data['date'] : null;
+    
+    $sql = "UPDATE schedules SET 
+            class_code = ?, class_name = ?, room_id = ?, room_display = ?, instructor = ?, 
+            department_id = ?, class_size = ?, schedule_date = ?, start_time = ?, end_time = ?, 
+            days = ?, semester = ?, school_year = ?
+            WHERE id = ?";
+    
+    dbExecute($sql, [
+        $data['classCode'] ?? '',
+        $data['className'] ?? '',
+        $roomId,
+        $data['room'] ?? '',
+        $data['instructor'] ?? '',
+        $departmentId,
+        $data['classSize'] ?? 0,
+        $scheduleDate,
+        $data['startTime'] ?? '00:00',
+        $data['endTime'] ?? '00:00',
+        $days,
+        $data['semester'] ?? '',
+        $data['schoolYear'] ?? '',
+        $scheduleId
+    ]);
+    
+    return true;
+}
+
+/**
+ * Delete schedule (hard delete from database)
+ */
+function deleteSchedule($scheduleId) {
+    if (!isDatabaseSetup()) {
+        return false;
+    }
+    
+    dbExecute("DELETE FROM schedules WHERE id = ?", [$scheduleId]);
+    return true;
+}
+
+/**
+ * Soft delete schedule (set inactive)
+ */
+function softDeleteSchedule($scheduleId) {
+    if (!isDatabaseSetup()) {
+        return false;
+    }
+    
+    dbExecute("UPDATE schedules SET is_active = 0 WHERE id = ?", [$scheduleId]);
+    return true;
+}
+
+/**
+ * Clear all schedules from database
+ */
+function clearAllSchedules() {
+    if (!isDatabaseSetup()) {
+        return false;
+    }
+    
+    dbExecute("DELETE FROM schedules");
+    return true;
+}
+
+/**
+ * Helper function to format schedule from database row
+ */
+function formatScheduleFromDB($row) {
+    return [
+        'id' => (int)$row['id'],
+        'classCode' => $row['class_code'],
+        'className' => $row['class_name'],
+        'roomId' => $row['room_id'],
+        'room' => $row['room_display'],
+        'instructor' => $row['instructor'],
+        'department' => $row['department_id'],
+        'classSize' => (int)$row['class_size'],
+        'date' => $row['schedule_date'],
+        'days' => $row['days'] ? explode(',', $row['days']) : [],
+        'startTime' => substr($row['start_time'], 0, 5),
+        'endTime' => substr($row['end_time'], 0, 5),
+        'semester' => $row['semester'],
+        'schoolYear' => $row['school_year'],
+        'hasConflict' => !empty($row['has_conflict']),
+        'conflictWith' => $row['conflict_with'] ?? null
+    ];
 }

@@ -1,93 +1,151 @@
 <?php
 /**
  * Building Data for UC Nexus
- * Contains building information and configurations
+ * Database-connected version
  */
 
-// Building information
-$BUILDINGS = [
-    'U' => [
-        'id' => 'U',
-        'name' => 'BRS Building (U Building)',
-        'fullName' => 'BRS Building',
-        'totalRooms' => 42,
-        'floors' => 9,
-        'color' => '#3B82F6' // Blue
-    ],
-    'M' => [
-        'id' => 'M',
-        'name' => 'Main Building (M Building)',
-        'fullName' => 'Main Building',
-        'totalRooms' => 13,
-        'floors' => 2,
-        'color' => '#10B981' // Green
-    ],
-    'S' => [
-        'id' => 'S',
-        'name' => 'Science Building (S Building)',
-        'fullName' => 'Science Building',
-        'totalRooms' => 69,
-        'floors' => 7,
-        'color' => '#8B5CF6' // Purple
-    ],
-    'N' => [
-        'id' => 'N',
-        'name' => 'EDS Building (N Building)',
-        'fullName' => 'EDS Building',
-        'totalRooms' => 35,
-        'floors' => 5,
-        'color' => '#F59E0B' // Amber
-    ],
-    'F' => [
-        'id' => 'F',
-        'name' => 'CHTM Building (F Building)',
-        'fullName' => 'CHTM Building',
-        'totalRooms' => 27,
-        'floors' => 7,
-        'color' => '#EC4899' // Pink
-    ],
-    'G' => [
-        'id' => 'G',
-        'name' => 'PE Building (G Building)',
-        'fullName' => 'PE Building',
-        'totalRooms' => 10,
-        'floors' => 4,
-        'color' => '#EF4444' // Red
-    ]
-];
+require_once __DIR__ . '/../config/database.php';
 
 /**
- * Get all buildings
+ * Get all buildings from database
  */
 function getAllBuildings() {
-    global $BUILDINGS;
-    return $BUILDINGS;
+    if (!isDatabaseSetup()) {
+        return [];
+    }
+    
+    $buildings = dbFetchAll("
+        SELECT b.*, 
+               COUNT(r.id) as room_count
+        FROM buildings b
+        LEFT JOIN rooms r ON b.id = r.building_id AND r.is_active = 1
+        GROUP BY b.id
+        ORDER BY b.name
+    ");
+    
+    $result = [];
+    foreach ($buildings as $building) {
+        $result[$building['id']] = [
+            'id' => $building['id'],
+            'name' => $building['full_name'] . ' (' . $building['id'] . ' Building)',
+            'fullName' => $building['full_name'],
+            'totalRooms' => (int)$building['room_count'],
+            'floors' => (int)$building['floors'],
+            'color' => $building['color']
+        ];
+    }
+    
+    return $result;
 }
 
 /**
  * Get a specific building by ID
  */
 function getBuildingById($buildingId) {
-    global $BUILDINGS;
-    return $BUILDINGS[$buildingId] ?? null;
+    if (!isDatabaseSetup()) {
+        return null;
+    }
+    
+    $building = dbFetchOne("
+        SELECT b.*, 
+               COUNT(r.id) as room_count
+        FROM buildings b
+        LEFT JOIN rooms r ON b.id = r.building_id AND r.is_active = 1
+        WHERE b.id = ?
+        GROUP BY b.id
+    ", [$buildingId]);
+    
+    if ($building) {
+        return [
+            'id' => $building['id'],
+            'name' => $building['full_name'] . ' (' . $building['id'] . ' Building)',
+            'fullName' => $building['full_name'],
+            'totalRooms' => (int)$building['room_count'],
+            'floors' => (int)$building['floors'],
+            'color' => $building['color']
+        ];
+    }
+    
+    return null;
 }
 
 /**
  * Get total number of buildings
  */
 function getTotalBuildings() {
-    global $BUILDINGS;
-    return count($BUILDINGS);
+    if (!isDatabaseSetup()) {
+        return 0;
+    }
+    
+    $result = dbFetchOne("SELECT COUNT(*) as count FROM buildings");
+    return (int)$result['count'];
 }
 
 /**
  * Get total rooms across all buildings
  */
 function getTotalRoomsAllBuildings() {
-    global $BUILDINGS;
-    $total = 0;
-    foreach ($BUILDINGS as $building) {
-        $total += $building['totalRooms'];
+    if (!isDatabaseSetup()) {
+        return 0;
     }
-    return $total;
+    
+    $result = dbFetchOne("SELECT COUNT(*) as count FROM rooms WHERE is_active = 1");
+    return (int)$result['count'];
+}
+
+/**
+ * Add a new building
+ */
+function addBuilding($data) {
+    if (!isDatabaseSetup()) {
+        return false;
+    }
+    
+    $sql = "INSERT INTO buildings (id, name, full_name, floors, color) VALUES (?, ?, ?, ?, ?)";
+    dbExecute($sql, [
+        $data['id'],
+        $data['name'],
+        $data['fullName'],
+        $data['floors'],
+        $data['color'] ?? '#3498db'
+    ]);
+    
+    return true;
+}
+
+/**
+ * Update building
+ */
+function updateBuilding($buildingId, $data) {
+    if (!isDatabaseSetup()) {
+        return false;
+    }
+    
+    $sql = "UPDATE buildings SET name = ?, full_name = ?, floors = ?, color = ? WHERE id = ?";
+    dbExecute($sql, [
+        $data['name'],
+        $data['fullName'],
+        $data['floors'],
+        $data['color'] ?? '#3498db',
+        $buildingId
+    ]);
+    
+    return true;
+}
+
+/**
+ * Delete building
+ */
+function deleteBuilding($buildingId) {
+    if (!isDatabaseSetup()) {
+        return false;
+    }
+    
+    // First, disable all rooms in this building
+    dbExecute("UPDATE rooms SET is_active = 0 WHERE building_id = ?", [$buildingId]);
+    
+    // Then delete the building
+    dbExecute("DELETE FROM buildings WHERE id = ?", [$buildingId]);
+    
+    return true;
 }

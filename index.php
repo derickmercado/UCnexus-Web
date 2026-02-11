@@ -1,6 +1,130 @@
 <?php
 session_start();
 
+// Set timezone to Manila, Philippines
+date_default_timezone_set('Asia/Manila');
+
+// Handle CSV export before any HTML output
+if (isset($_GET['export_csv']) && isset($_SESSION['isLoggedIn']) && $_SESSION['isLoggedIn']) {
+    // Include data files to check database availability
+    require_once __DIR__ . '/data/schedules.php';
+    $useDatabase = isDatabaseSetup();
+    $schedules = $useDatabase ? getAllSchedules() : ($_SESSION['schedules'] ?? []);
+    
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="schedules_' . date('Y-m-d') . '.csv"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    $output = fopen('php://output', 'w');
+    // Add BOM for Excel UTF-8 compatibility
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+    fputcsv($output, ['Class Code', 'Class Name', 'Room', 'Instructor', 'Date', 'Start Time', 'End Time', 'Department', 'Class Size', 'Days']);
+    
+    foreach ($schedules as $schedule) {
+        $days = isset($schedule['days']) ? (is_array($schedule['days']) ? implode('/', $schedule['days']) : $schedule['days']) : '';
+        fputcsv($output, [
+            $schedule['classCode'] ?? '',
+            $schedule['className'] ?? '',
+            $schedule['room'] ?? '',
+            $schedule['instructor'] ?? '',
+            $schedule['date'] ?? '',
+            $schedule['startTime'] ?? '',
+            $schedule['endTime'] ?? '',
+            $schedule['department'] ?? '',
+            $schedule['classSize'] ?? '',
+            $days
+        ]);
+    }
+    fclose($output);
+    exit();
+}
+
+// Handle CSV template download
+if (isset($_GET['download_template']) && isset($_SESSION['isLoggedIn']) && $_SESSION['isLoggedIn']) {
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="schedule_template.csv"');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    $output = fopen('php://output', 'w');
+    // Add BOM for Excel UTF-8 compatibility
+    fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
+    fputcsv($output, ['Class Code', 'Class Name', 'Room', 'Instructor', 'Date', 'Start Time', 'End Time', 'Department', 'Class Size', 'Days']);
+    // Add sample rows
+    fputcsv($output, ['IT101', 'Introduction to Computing', 'M303 - Computer Laboratory', 'Dr. Maria Santos', '2026-02-15', '07:30', '08:50', 'CCS', '40', 'monday/wednesday/friday']);
+    fputcsv($output, ['IT102', 'Web Development', 'M304 - Computer Laboratory', 'Prof. Juan Cruz', '2026-02-16', '08:50', '10:10', 'CCS', '35', 'tuesday/thursday']);
+    fclose($output);
+    exit();
+}
+
+// Handle AJAX room availability check
+if (isset($_GET['check_room_availability']) && isset($_SESSION['isLoggedIn']) && $_SESSION['isLoggedIn']) {
+    header('Content-Type: application/json');
+    
+    require_once __DIR__ . '/data/rooms.php';
+    require_once __DIR__ . '/data/schedules.php';
+    
+    $date = $_GET['date'] ?? '';
+    $startTime = $_GET['start_time'] ?? '';
+    $endTime = $_GET['end_time'] ?? '';
+    $excludeId = isset($_GET['exclude_id']) ? intval($_GET['exclude_id']) : null;
+    
+    $roomOptions = getRoomsAsOptions();
+    $result = [];
+    
+    foreach ($roomOptions as $option) {
+        $roomLabel = $option['label'];
+        $available = true;
+        $conflictInfo = null;
+        
+        // Only check availability if date and times are provided
+        if (!empty($date) && !empty($startTime) && !empty($endTime)) {
+            // Get all schedules and check for conflicts
+            $allSchedules = getAllSchedules();
+            
+            foreach ($allSchedules as $schedule) {
+                // Skip the schedule being edited
+                if ($excludeId !== null && isset($schedule['id']) && $schedule['id'] == $excludeId) {
+                    continue;
+                }
+                
+                // Check if same room and same date
+                if (($schedule['room'] ?? '') === $roomLabel && ($schedule['date'] ?? '') === $date) {
+                    $existingStart = $schedule['startTime'] ?? '';
+                    $existingEnd = $schedule['endTime'] ?? '';
+                    
+                    // Check for time overlap
+                    if ($startTime < $existingEnd && $endTime > $existingStart) {
+                        $available = false;
+                        $conflictInfo = [
+                            'className' => $schedule['className'] ?? 'Unknown',
+                            'classCode' => $schedule['classCode'] ?? '',
+                            'startTime' => date('g:i A', strtotime($existingStart)),
+                            'endTime' => date('g:i A', strtotime($existingEnd)),
+                            'instructor' => $schedule['instructor'] ?? ''
+                        ];
+                        break;
+                    }
+                }
+            }
+        }
+        
+        $result[] = [
+            'value' => $option['value'],
+            'label' => $roomLabel,
+            'building' => $option['building'] ?? 'Unknown',
+            'buildingFull' => $option['buildingFull'] ?? '',
+            'floor' => $option['floor'] ?? 1,
+            'available' => $available,
+            'conflict' => $conflictInfo
+        ];
+    }
+    
+    echo json_encode(['rooms' => $result]);
+    exit();
+}
+
 // Default credentials
 define('DEFAULT_USERNAME', 'admin');
 define('DEFAULT_PASSWORD', 'admin123');
