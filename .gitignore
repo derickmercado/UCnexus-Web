@@ -1,0 +1,14 @@
+# Test files
+config/test_connection.php
+config/import_schema.php
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

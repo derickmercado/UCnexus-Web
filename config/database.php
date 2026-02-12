@@ -1,15 +1,27 @@
 <?php
 /**
  * Database Configuration for UC Nexus
- * Using Railway Cloud MySQL
+ * Auto-detects Railway environment or falls back to local
  */
 
-// Database credentials - Railway Cloud
-define('DB_HOST', 'switchyard.proxy.rlwy.net');
-define('DB_PORT', '51146');
-define('DB_NAME', 'railway');
-define('DB_USER', 'root');
-define('DB_PASS', 'heLcUrNPJSeOIcQJIBfdOlqqzvGGrFqa');
+// Auto-detect Railway environment
+$isRailway = getenv('RAILWAY_ENVIRONMENT') !== false || getenv('MYSQLHOST') !== false;
+
+if ($isRailway) {
+    // Railway Cloud - uses Railway's auto-injected environment variables
+    define('DB_HOST', getenv('MYSQLHOST') ?: getenv('MYSQL_HOST') ?: 'switchyard.proxy.rlwy.net');
+    define('DB_PORT', getenv('MYSQLPORT') ?: getenv('MYSQL_PORT') ?: '51146');
+    define('DB_NAME', getenv('MYSQLDATABASE') ?: getenv('MYSQL_DATABASE') ?: 'railway');
+    define('DB_USER', getenv('MYSQLUSER') ?: getenv('MYSQL_USER') ?: 'root');
+    define('DB_PASS', getenv('MYSQLPASSWORD') ?: getenv('MYSQL_PASSWORD') ?: 'heLcUrNPJSeOIcQJIBfdOlqqzvGGrFqa');
+} else {
+    // Local XAMPP Database
+    define('DB_HOST', 'localhost');
+    define('DB_PORT', '3306');
+    define('DB_NAME', 'ucnexus_db');
+    define('DB_USER', 'root');
+    define('DB_PASS', '');
+}
 
 /**
  * Get database connection using PDO
@@ -24,6 +36,8 @@ function getDBConnection() {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
+                PDO::ATTR_PERSISTENT => true, // Use persistent connections
+                PDO::ATTR_TIMEOUT => 5, // Connection timeout
             ];
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
         } catch (PDOException $e) {
@@ -39,17 +53,28 @@ function getDBConnection() {
 }
 
 /**
- * Check if database is set up
+ * Check if database is set up (cached for performance)
  */
 function isDatabaseSetup() {
+    static $isSetup = null;
+    
+    if ($isSetup !== null) {
+        return $isSetup;
+    }
+    
     try {
         $pdo = getDBConnection();
-        if ($pdo === null) return false;
+        if ($pdo === null) {
+            $isSetup = false;
+            return false;
+        }
         
         // Check if tables exist
         $stmt = $pdo->query("SHOW TABLES LIKE 'rooms'");
-        return $stmt->rowCount() > 0;
+        $isSetup = $stmt->rowCount() > 0;
+        return $isSetup;
     } catch (Exception $e) {
+        $isSetup = false;
         return false;
     }
 }
