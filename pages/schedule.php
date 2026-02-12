@@ -402,40 +402,21 @@ $editMode = false;
 $editScheduleId = 0;
 
 /**
- * Validate schedule time - check if AM time is entered when it's already PM
+ * Validate schedule date and time
+ * - Rejects dates before today
+ * - Rejects times that have already passed for today's schedule
  * Returns array with 'valid' boolean and 'message' if there's an issue
  */
 function validateScheduleTime($date, $startTime, $endTime) {
     $today = date('Y-m-d');
-    $currentHour = (int)date('H');
+    $currentTime = date('H:i:s');
     
-    // Only validate if schedule is for today
-    if ($date !== $today) {
-        return ['valid' => true, 'message' => ''];
-    }
-    
-    $startHour = (int)substr($startTime, 0, 2);
-    $endHour = (int)substr($endTime, 0, 2);
-    
-    // If current time is PM (12:00 or later) and user entered AM time (before 12:00)
-    if ($currentHour >= 12) {
-        // Check if start time is in AM and has already passed
-        if ($startHour < 12 && $startHour < $currentHour - 12) {
-            $suggestedStart = date('g:i A', strtotime($startTime) + 12 * 3600);
-            $suggestedEnd = date('g:i A', strtotime($endTime) + 12 * 3600);
-            return [
-                'valid' => false,
-                'message' => "You entered " . date('g:i A', strtotime($startTime)) . " but it's already " . date('g:i A') . ". Did you mean {$suggestedStart} - {$suggestedEnd} (PM)?"
-            ];
-        }
-        
-        // Check if the entered time has already passed today
-        if ($startHour < $currentHour) {
-            return [
-                'valid' => false,
-                'message' => "The start time " . date('g:i A', strtotime($startTime)) . " has already passed. It's currently " . date('g:i A') . ". Please select a future time."
-            ];
-        }
+    // Check if date is in the past (before today)
+    if ($date < $today) {
+        return [
+            'valid' => false,
+            'message' => "Cannot schedule for a past date (" . date('d/m/Y', strtotime($date)) . "). Today is " . date('d/m/Y') . ". Please select today or a future date."
+        ];
     }
     
     // Validate end time is after start time
@@ -444,6 +425,16 @@ function validateScheduleTime($date, $startTime, $endTime) {
             'valid' => false,
             'message' => "End time must be after start time."
         ];
+    }
+    
+    // If schedule is for today, check if start time has already passed
+    if ($date === $today) {
+        if ($startTime < $currentTime) {
+            return [
+                'valid' => false,
+                'message' => "The start time " . date('g:i A', strtotime($startTime)) . " has already passed. It's currently " . date('g:i A') . ". Please select a future time."
+            ];
+        }
     }
     
     return ['valid' => true, 'message' => ''];
@@ -1185,7 +1176,7 @@ usort($schedules, function($a, $b) {
                 ⚠️ <?php echo $validationError; ?>
             </div>
             <?php endif; ?>
-            <form method="POST" action="?page=schedule">
+            <form method="POST" action="?page=schedule" id="scheduleForm">
                 <input type="hidden" name="action" value="<?php echo $editMode ? 'edit_schedule' : 'add_schedule'; ?>">
                 <?php if ($editMode): ?>
                 <input type="hidden" name="edit_id" value="<?php echo $editScheduleId; ?>">
@@ -1678,6 +1669,66 @@ function validateRoomInput() {
     }
 }
 
+// Validate date and time - reject past dates and past times
+function validateDateTimeSchedule(showAlert = false) {
+    const dateInput = document.querySelector('input[name="scheduleDate"]');
+    const startTimeInput = document.querySelector('input[name="startTime"]');
+    const statusDiv = document.getElementById('roomAvailabilityStatus');
+    
+    if (!dateInput) return true;
+    
+    const selectedDate = dateInput.value;
+    const selectedStartTime = startTimeInput?.value || '';
+    
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
+    // Check if date is in the past
+    if (selectedDate && selectedDate < todayStr) {
+        const formattedDate = new Date(selectedDate).toLocaleDateString('en-GB'); // DD/MM/YYYY
+        const formattedToday = today.toLocaleDateString('en-GB');
+        const errorMsg = `Cannot schedule for a past date (${formattedDate}). Today is ${formattedToday}. Please select today or a future date.`;
+        
+        if (showAlert) {
+            alert(errorMsg);
+        }
+        if (statusDiv) {
+            statusDiv.innerHTML = `<span style="color: #dc3545;">⚠️ ${errorMsg}</span>`;
+        }
+        dateInput.style.borderColor = '#dc3545';
+        return false;
+    } else if (dateInput.value) {
+        dateInput.style.borderColor = '#28a745';
+    }
+    
+    // If today's date, check if start time has passed
+    if (selectedDate === todayStr && selectedStartTime) {
+        const now = new Date();
+        const currentTimeStr = now.toTimeString().slice(0, 5); // HH:MM format
+        
+        if (selectedStartTime < currentTimeStr) {
+            const startTimeFormatted = new Date('1970-01-01T' + selectedStartTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const currentTimeFormatted = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+            const errorMsg = `The start time ${startTimeFormatted} has already passed. It's currently ${currentTimeFormatted}. Please select a future time.`;
+            
+            if (showAlert) {
+                alert(errorMsg);
+            }
+            if (statusDiv) {
+                statusDiv.innerHTML = `<span style="color: #dc3545;">⚠️ ${errorMsg}</span>`;
+            }
+            startTimeInput.style.borderColor = '#dc3545';
+            return false;
+        } else {
+            startTimeInput.style.borderColor = '#28a745';
+        }
+    } else if (startTimeInput && startTimeInput.value) {
+        startTimeInput.style.borderColor = '#28a745';
+    }
+    
+    return true;
+}
+
 // Add event listeners to date/time inputs
 document.addEventListener('DOMContentLoaded', function() {
     const dateInput = document.querySelector('input[name="scheduleDate"]');
@@ -1685,10 +1736,41 @@ document.addEventListener('DOMContentLoaded', function() {
     const endTimeInput = document.querySelector('input[name="endTime"]');
     const roomInput = document.getElementById('roomSearchInput');
     const dropdown = document.getElementById('roomDropdown');
+    const form = document.getElementById('scheduleForm');
     
-    if (dateInput) dateInput.addEventListener('change', checkRoomAvailability);
-    if (startTimeInput) startTimeInput.addEventListener('change', checkRoomAvailability);
+    // Set minimum date to today
+    if (dateInput) {
+        const today = new Date().toISOString().split('T')[0];
+        dateInput.setAttribute('min', today);
+        
+        // Validate on date change (no alert, just visual)
+        dateInput.addEventListener('change', function() {
+            if (validateDateTimeSchedule(false)) {
+                checkRoomAvailability();
+            }
+        });
+    }
+    
+    // Validate start time when changed (no alert, just visual)
+    if (startTimeInput) {
+        startTimeInput.addEventListener('change', function() {
+            if (validateDateTimeSchedule(false)) {
+                checkRoomAvailability();
+            }
+        });
+    }
+    
     if (endTimeInput) endTimeInput.addEventListener('change', checkRoomAvailability);
+    
+    // Form submit validation (with alert)
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateDateTimeSchedule(true)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    }
     
     if (roomInput) {
         roomInput.addEventListener('focus', showRoomDropdown);
