@@ -1,14 +1,15 @@
 <?php
 /**
  * Database Configuration for UC Nexus
- * Using MySQL/MariaDB via phpMyAdmin (XAMPP)
+ * Using Railway Cloud MySQL
  */
 
-// Database credentials
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'ucnexus_db');
+// Database credentials - Railway Cloud
+define('DB_HOST', 'switchyard.proxy.rlwy.net');
+define('DB_PORT', '51146');
+define('DB_NAME', 'railway');
 define('DB_USER', 'root');
-define('DB_PASS', ''); // Default XAMPP has no password
+define('DB_PASS', 'heLcUrNPJSeOIcQJIBfdOlqqzvGGrFqa');
 
 /**
  * Get database connection using PDO
@@ -18,7 +19,7 @@ function getDBConnection() {
     
     if ($pdo === null) {
         try {
-            $dsn = "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+            $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
             $options = [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

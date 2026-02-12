@@ -1,9 +1,5 @@
 -- UC Nexus Database Schema
--- Database: ucnexus_db
-
--- Create database if not exists
-CREATE DATABASE IF NOT EXISTS `ucnexus_db` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `ucnexus_db`;
+-- Database: railway (Railway Cloud)
 
 -- ===============================================
 -- BUILDINGS TABLE
@@ -395,9 +391,9 @@ INSERT INTO `rooms` (`id`, `name`, `description`, `capacity`, `location`, `build
 ('room-F706', 'Classroom/Lecture Hall', 'Lecture Room', 40, 'CHTM Building, 7th Floor', 'F', 7, 'classroom')
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS `idx_rooms_building` ON `rooms` (`building_id`);
-CREATE INDEX IF NOT EXISTS `idx_rooms_type` ON `rooms` (`type`);
-CREATE INDEX IF NOT EXISTS `idx_schedules_room` ON `schedules` (`room_id`);
-CREATE INDEX IF NOT EXISTS `idx_schedules_date` ON `schedules` (`schedule_date`);
-CREATE INDEX IF NOT EXISTS `idx_schedules_dept` ON `schedules` (`department_id`);
+-- Indexes for better performance (commented out for initial setup - can be added manually later)
+-- CREATE INDEX `idx_rooms_building` ON `rooms` (`building_id`);
+-- CREATE INDEX `idx_rooms_type` ON `rooms` (`type`);
+-- CREATE INDEX `idx_schedules_room` ON `schedules` (`room_id`);
+-- CREATE INDEX `idx_schedules_date` ON `schedules` (`schedule_date`);
+-- CREATE INDEX `idx_schedules_dept` ON `schedules` (`department_id`);

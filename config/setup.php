@@ -9,11 +9,12 @@ session_start();
 // Check if user is logged in (for security)
 $isLoggedIn = isset($_SESSION['isLoggedIn']) && $_SESSION['isLoggedIn'];
 
-// Database credentials
-$host = 'localhost';
+// Database credentials - Railway Cloud
+$host = 'switchyard.proxy.rlwy.net';
+$port = '51146';
 $user = 'root';
-$pass = '';
-$dbname = 'ucnexus_db';
+$pass = 'heLcUrNPJSeOIcQJIBfdOlqqzvGGrFqa';
+$dbname = 'railway';
 
 $message = '';
 $error = '';
@@ -22,8 +23,8 @@ $success = false;
 // Handle setup action
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     try {
-        // Connect to MySQL without selecting a database
-        $pdo = new PDO("mysql:host=$host", $user, $pass, [
+        // Connect to MySQL and select the database
+        $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname", $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
         ]);
         
@@ -83,7 +84,7 @@ $roomCount = 0;
 $scheduleCount = 0;
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass, [
+    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
     
