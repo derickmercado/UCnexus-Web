@@ -1,27 +1,15 @@
 <?php
 /**
  * Database Configuration for UC Nexus
- * Auto-detects Railway environment or falls back to local
+ * Local XAMPP Database
  */
 
-// Auto-detect Railway environment
-$isRailway = getenv('RAILWAY_ENVIRONMENT') !== false || getenv('MYSQLHOST') !== false;
-
-if ($isRailway) {
-    // Railway Cloud - uses Railway's auto-injected environment variables
-    define('DB_HOST', getenv('MYSQLHOST') ?: getenv('MYSQL_HOST') ?: 'switchyard.proxy.rlwy.net');
-    define('DB_PORT', getenv('MYSQLPORT') ?: getenv('MYSQL_PORT') ?: '51146');
-    define('DB_NAME', getenv('MYSQLDATABASE') ?: getenv('MYSQL_DATABASE') ?: 'railway');
-    define('DB_USER', getenv('MYSQLUSER') ?: getenv('MYSQL_USER') ?: 'root');
-    define('DB_PASS', getenv('MYSQLPASSWORD') ?: getenv('MYSQL_PASSWORD') ?: 'heLcUrNPJSeOIcQJIBfdOlqqzvGGrFqa');
-} else {
-    // Local XAMPP Database
-    define('DB_HOST', 'localhost');
-    define('DB_PORT', '3306');
-    define('DB_NAME', 'ucnexus_db');
-    define('DB_USER', 'root');
-    define('DB_PASS', '');
-}
+// Local XAMPP Database
+define('DB_HOST', 'localhost');
+define('DB_PORT', '3306');
+define('DB_NAME', 'ucnexus_db');
+define('DB_USER', 'root');
+define('DB_PASS', '');
 
 /**
  * Get database connection using PDO

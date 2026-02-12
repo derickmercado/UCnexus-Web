@@ -3,19 +3,20 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 set_time_limit(300);
 
-$host = 'switchyard.proxy.rlwy.net';
-$port = '51146';
-$dbname = 'railway';
+// Local XAMPP Database
+$host = 'localhost';
+$port = '3306';
+$dbname = 'ucnexus_db';
 $user = 'root';
-$pass = 'heLcUrNPJSeOIcQJIBfdOlqqzvGGrFqa';
+$pass = '';
 
-echo "<h2>Importing Schema to Railway</h2>";
+echo "<h2>Importing Schema to Local Database</h2>";
 
 try {
     $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
     ]);
-    echo "<p style='color:green'>✓ Connected to Railway!</p>";
+    echo "<p style='color:green'>✓ Connected to local database!</p>";
     
     // Read schema file
     $schemaFile = __DIR__ . '/schema.sql';

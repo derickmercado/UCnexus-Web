@@ -12,6 +12,108 @@ $roomOptions = getRoomsAsOptions();
 $departments = getDepartments();
 $timeSlots = getTimeSlots();
 
+// =============== BSIT WEB TECHNOLOGY CURRICULUM COURSES ===============
+// =============== CURRICULUM COURSES BY YEAR LEVEL ===============
+$coursesByYear = [
+    '1st Year' => [
+        // CC Courses
+        'CC1' => 'Computing Fundamentals',
+        'CC2' => 'Introduction to Computer Programming',
+        'CC3' => 'Object Oriented Programming',
+        'CC4' => 'Data Structures and Algorithms',
+        'CC7' => 'Human Computer Interaction',
+        'CC8' => 'Introduction to Statistical Methods',
+        'CC9' => 'Discrete Structures',
+        'CC10' => 'Introduction to Networks',
+        'CC11' => 'Communication in the Workplace',
+        'CC12' => 'Statistical Design and Analysis',
+        'CC13' => 'Systems Analysis and Design',
+        'CC21' => 'Introduction to ERP',
+        'CC22' => 'Introduction to Platform Technologies',
+        // General Education
+        'Engl 100' => 'Purposive Communication',
+        'Hist 100' => 'Readings in Philippine History',
+        'Math 100' => 'Mathematics in the Modern World',
+        'Psych 100' => 'Understanding the Self',
+        'Techno 100' => 'Technopreneurship',
+        // PE & NSTP
+        'NSTP 1' => 'National Service Training Program 1',
+        'NSTP 2' => 'National Service Training Program 2',
+        'PATHFit 1' => 'Movement Competency Training',
+        'PATHFit 2' => 'Exercise-based Fitness Activities',
+        'PATHFit 3' => 'Martial Arts',
+    ],
+    '2nd Year' => [
+        // CC Courses
+        'CC5' => 'Information Management',
+        'CC14' => 'Web Application Development',
+        'CC15' => 'Systems Integration and Architecture',
+        'CC16' => 'IT Security',
+        'CC18' => 'Social and Professional Issues',
+        'CC19' => 'Data Mining',
+        // CIT Courses
+        'CIT1' => 'Quantitative Analysis',
+        'CIT2' => 'Routing and Switching',
+        'CIT3' => 'IT Project Management',
+        'CIT4' => 'Introduction to Integrative Programming and Technologies',
+        'CIT5' => 'Accounting Essentials',
+        'CIT14' => 'Web Technologies',
+        'CIT15' => 'Multimedia Systems',
+        'CIT16' => 'IT Technopreneurship',
+        // General Education
+        'CORDI 101' => 'Cordilleras: History and Socio-Cultural Heritage',
+        'FL 100' => 'Foreign Culture and Language',
+        'Science 100' => 'Science, Technology and Society',
+        'Soc Sci 100' => 'Art Appreciation',
+        'Soc Sci 101N' => 'Ethics',
+        // PE
+        'PATHFit 4' => 'Outdoor and Adventure Activities',
+    ],
+    '3rd Year' => [
+        // CC Courses
+        'CC6' => 'Emerging Technologies in IT',
+        'CC17' => 'Mobile Application Design and Development',
+        // CIT Courses
+        'CIT6' => 'Capstone Project 1',
+        'CIT7' => 'Capstone Project 2',
+        'CIT8' => 'IT Internship',
+        'CIT17' => 'Web Information System',
+        'CIT18' => 'Mastery in Web Technology',
+        // General Education
+        'Hist 101' => 'The Life and Works of Rizal',
+        'Soc Sci 103N' => 'The Contemporary World',
+    ],
+];
+
+// Flat list for lookups (auto-fill, JS, etc.)
+$curriculumCourses = [];
+foreach ($coursesByYear as $year => $courses) {
+    foreach ($courses as $code => $name) {
+        $curriculumCourses[$code] = $name;
+    }
+}
+
+// Build reverse lookup: course code => year level
+$courseYearMap = [];
+foreach ($coursesByYear as $year => $courses) {
+    foreach ($courses as $code => $name) {
+        $courseYearMap[$code] = $year;
+    }
+}
+
+// =============== FIXED TIME SLOTS ===============
+$fixedTimeSlots = [
+    '07:30' => '08:50',
+    '08:50' => '10:10',
+    '10:10' => '11:30',
+    '11:30' => '12:50',
+    '12:50' => '14:10',
+    '14:10' => '15:30',
+    '15:30' => '16:50',
+    '16:50' => '18:10',
+    '18:10' => '19:30',
+];
+
 // Initialize schedule data (only needed for session-based storage)
 if (!$useDatabase && !isset($_SESSION['schedules'])) {
     $_SESSION['schedules'] = [];
@@ -342,10 +444,10 @@ function isValidInstructorName($name) {
 }
 
 /**
- * Check if a room is available at a specific date and time
+ * Check if a room is available at specific days and time
  * Returns array with 'available' boolean and 'conflict' info if not available
  */
-function checkRoomAvailability($room, $date, $startTime, $endTime, $excludeScheduleId = null) {
+function checkRoomAvailability($room, $days, $startTime, $endTime, $excludeScheduleId = null) {
     global $useDatabase;
     
     // Get all schedules
@@ -355,14 +457,34 @@ function checkRoomAvailability($room, $date, $startTime, $endTime, $excludeSched
         $allSchedules = $_SESSION['schedules'] ?? [];
     }
     
+    // Parse the days string into an array
+    $newDays = array_map('trim', explode('/', $days));
+    $newDays = array_map('strtolower', $newDays);
+    
     foreach ($allSchedules as $schedule) {
         // Skip the schedule being edited
         if ($excludeScheduleId !== null && isset($schedule['id']) && $schedule['id'] == $excludeScheduleId) {
             continue;
         }
         
-        // Check if same room and same date
-        if (($schedule['room'] ?? '') === $room && ($schedule['date'] ?? '') === $date) {
+        // Check if same room
+        if (($schedule['room'] ?? '') !== $room) {
+            continue;
+        }
+        
+        // Parse existing schedule's days
+        $eDays = $schedule['days'] ?? '';
+        if (is_array($eDays)) {
+            $existingDays = array_map('trim', $eDays);
+        } else {
+            $existingDays = array_map('trim', explode('/', $eDays));
+        }
+        $existingDays = array_map('strtolower', $existingDays);
+        
+        // Check for day overlap
+        $dayOverlap = !empty(array_intersect($newDays, $existingDays));
+        
+        if ($dayOverlap) {
             $existingStart = $schedule['startTime'] ?? '';
             $existingEnd = $schedule['endTime'] ?? '';
             
@@ -376,7 +498,8 @@ function checkRoomAvailability($room, $date, $startTime, $endTime, $excludeSched
                         'classCode' => $schedule['classCode'] ?? '',
                         'startTime' => date('g:i A', strtotime($existingStart)),
                         'endTime' => date('g:i A', strtotime($existingEnd)),
-                        'instructor' => $schedule['instructor'] ?? ''
+                        'instructor' => $schedule['instructor'] ?? '',
+                        'days' => $schedule['days'] ?? ''
                     ]
                 ];
             }
@@ -386,13 +509,75 @@ function checkRoomAvailability($room, $date, $startTime, $endTime, $excludeSched
     return ['available' => true, 'conflict' => null];
 }
 
+/**
+ * Check if a schedule is a duplicate (same class code + overlapping days + overlapping time)
+ * This prevents the exact same class from being scheduled twice on the same day/time
+ */
+function checkDuplicateSchedule($classCode, $days, $startTime, $endTime, $excludeScheduleId = null) {
+    global $useDatabase;
+    
+    if ($useDatabase) {
+        $allSchedules = getAllSchedules();
+    } else {
+        $allSchedules = $_SESSION['schedules'] ?? [];
+    }
+    
+    // Parse new days
+    $newDays = array_map('strtolower', array_map('trim', explode('/', $days)));
+    
+    foreach ($allSchedules as $schedule) {
+        if ($excludeScheduleId !== null && isset($schedule['id']) && $schedule['id'] == $excludeScheduleId) {
+            continue;
+        }
+        
+        // Check same class code
+        if (strcasecmp($schedule['classCode'] ?? '', $classCode) !== 0) {
+            continue;
+        }
+        
+        // Parse existing days
+        $eDays = $schedule['days'] ?? '';
+        if (is_array($eDays)) {
+            $existingDays = array_map('trim', $eDays);
+        } else {
+            $existingDays = array_map('trim', explode('/', $eDays));
+        }
+        $existingDays = array_map('strtolower', $existingDays);
+        
+        // Check day overlap
+        if (empty(array_intersect($newDays, $existingDays))) {
+            continue;
+        }
+        
+        // Check time overlap
+        $existingStart = $schedule['startTime'] ?? '';
+        $existingEnd = $schedule['endTime'] ?? '';
+        if ($startTime < $existingEnd && $endTime > $existingStart) {
+            return [
+                'duplicate' => true,
+                'existing' => [
+                    'classCode' => $schedule['classCode'] ?? '',
+                    'className' => $schedule['className'] ?? '',
+                    'room' => $schedule['room'] ?? '',
+                    'days' => is_array($eDays) ? implode('/', $eDays) : $eDays,
+                    'startTime' => date('g:i A', strtotime($existingStart)),
+                    'endTime' => date('g:i A', strtotime($existingEnd)),
+                    'instructor' => $schedule['instructor'] ?? ''
+                ]
+            ];
+        }
+    }
+    
+    return ['duplicate' => false, 'existing' => null];
+}
+
 // Store form data for repopulation on validation error
 $formData = [
     'classCode' => '',
     'className' => '',
     'scheduleRoom' => '',
     'instructor' => '',
-    'scheduleDate' => '',
+    'scheduleDays' => '',
     'startTime' => '',
     'endTime' => ''
 ];
@@ -448,7 +633,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         'className' => $_POST['className'] ?? '',
         'scheduleRoom' => $_POST['scheduleRoom'] ?? '',
         'instructor' => $_POST['instructor'] ?? '',
-        'scheduleDate' => $_POST['scheduleDate'] ?? '',
+        'scheduleDate' => '', // Legacy - not used anymore
+        'days' => $_POST['scheduleDays'] ?? '',
         'startTime' => $_POST['startTime'] ?? '',
         'endTime' => $_POST['endTime'] ?? ''
     ];
@@ -461,21 +647,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $validationError = $instructorValidation['message'];
         $showForm = true;
     } else {
-        // Validate schedule time (check for AM/PM issues)
-        $timeValidation = validateScheduleTime(
-            $_POST['scheduleDate'] ?? '',
-            $_POST['startTime'] ?? '',
-            $_POST['endTime'] ?? ''
-        );
-        
-        if (!$timeValidation['valid']) {
-            $validationError = $timeValidation['message'];
+        // Validate that at least one day is selected
+        $selectedDays = $_POST['scheduleDays'] ?? '';
+        if (empty($selectedDays)) {
+            $validationError = "Please select at least one day for the schedule.";
             $showForm = true;
         } else {
             // Check room availability
             $roomCheck = checkRoomAvailability(
                 $_POST['scheduleRoom'] ?? '',
-                $_POST['scheduleDate'] ?? '',
+                $_POST['scheduleDays'] ?? '',
                 $_POST['startTime'] ?? '',
                 $_POST['endTime'] ?? ''
             );
@@ -485,6 +666,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $validationError = "Room not available! Already booked for \"{$conflict['classCode']} - {$conflict['className']}\" from {$conflict['startTime']} to {$conflict['endTime']} by {$conflict['instructor']}.";
                 $showForm = true;
             } else {
+                // Check for duplicate schedule (same class code + same day + same time)
+                $dupCheck = checkDuplicateSchedule(
+                    $_POST['classCode'] ?? '',
+                    $_POST['scheduleDays'] ?? '',
+                    $_POST['startTime'] ?? '',
+                    $_POST['endTime'] ?? ''
+                );
+                
+                if ($dupCheck['duplicate']) {
+                    $dup = $dupCheck['existing'];
+                    $validationError = "Duplicate schedule! \"{$dup['classCode']} - {$dup['className']}\" is already scheduled on {$dup['days']} from {$dup['startTime']} to {$dup['endTime']} in {$dup['room']}.";
+                    $showForm = true;
+                } else {
                 // Validation passed, proceed with saving
                 if ($useDatabase) {
                     // Use database
@@ -493,12 +687,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         'className' => htmlspecialchars($_POST['className'] ?? ''),
                         'room' => htmlspecialchars($_POST['scheduleRoom'] ?? ''),
                         'instructor' => htmlspecialchars($_POST['instructor'] ?? ''),
-                        'date' => htmlspecialchars($_POST['scheduleDate'] ?? ''),
+                        'days' => htmlspecialchars($_POST['scheduleDays'] ?? ''),
                         'startTime' => htmlspecialchars($_POST['startTime'] ?? ''),
                         'endTime' => htmlspecialchars($_POST['endTime'] ?? ''),
                         'department' => htmlspecialchars($_POST['department'] ?? ''),
-                        'classSize' => intval($_POST['classSize'] ?? 0),
-                        'days' => isset($_POST['days']) ? $_POST['days'] : []
+                        'classSize' => intval($_POST['classSize'] ?? 0)
                     ];
                     if (addSchedule($newSchedule)) {
                         $_SESSION['success'] = 'Schedule added successfully!';
@@ -520,7 +713,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         'className' => htmlspecialchars($_POST['className'] ?? ''),
                         'room' => htmlspecialchars($_POST['scheduleRoom'] ?? ''),
                         'instructor' => htmlspecialchars($_POST['instructor'] ?? ''),
-                        'date' => htmlspecialchars($_POST['scheduleDate'] ?? ''),
+                        'days' => htmlspecialchars($_POST['scheduleDays'] ?? ''),
                         'startTime' => htmlspecialchars($_POST['startTime'] ?? ''),
                         'endTime' => htmlspecialchars($_POST['endTime'] ?? '')
                     ];
@@ -529,6 +722,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 }
                 header('Location: ?page=schedule');
                 exit();
+            }
             }
         }
     }
@@ -576,8 +770,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $header = fgetcsv($file); // Skip header
         $importCount = 0;
         $conflictCount = 0;
+        $skipCount = 0;
         $successList = [];
         $conflictList = [];
+        $skippedList = [];
         $correctionsList = []; // Track auto-corrections made
         
         if ($useDatabase) {
@@ -586,12 +782,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 if (count($data) >= 6 && !empty(trim($data[0]))) {
                     $corrections = []; // Track corrections for this row
                     
-                    // Smart parse date
-                    $rawDate = trim($data[4]);
-                    $dateResult = smartParseDate($rawDate);
-                    $parsedDate = $dateResult['parsed'];
-                    if ($dateResult['corrected'] && $dateResult['parsed']) {
-                        $corrections[] = "Date: '{$rawDate}' → '" . date('d/m/Y', strtotime($parsedDate)) . "'";
+                    // Days field (column index 4)
+                    $rawDays = trim($data[4] ?? '');
+                    
+                    // Validate days - skip row if empty
+                    if (empty($rawDays)) {
+                        $skipCount++;
+                        $skippedList[] = [
+                            'code' => trim($data[0]),
+                            'name' => trim($data[1] ?? ''),
+                            'reason' => 'No days specified'
+                        ];
+                        continue;
                     }
                     
                     // Smart parse times
@@ -638,11 +840,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     
                     // Check for room conflict before adding
                     $hasConflict = false;
+                    $isDuplicate = false;
                     $conflictWith = null;
                     $conflictDetails = null;
                     
-                    if (!empty($room) && !empty($parsedDate)) {
-                        $roomCheck = checkRoomAvailability($room, $parsedDate, $parsedStartTime, $parsedEndTime);
+                    // Check for duplicate schedule (same class code + same day + same time)
+                    if (!empty($rawDays)) {
+                        $dupCheck = checkDuplicateSchedule($classCode, $rawDays, $parsedStartTime, $parsedEndTime);
+                        if ($dupCheck['duplicate']) {
+                            $isDuplicate = true;
+                            $conflictDetails = $dupCheck['existing'];
+                            $conflictCount++;
+                        }
+                    }
+                    
+                    if (!$isDuplicate && !empty($room) && !empty($rawDays)) {
+                        $roomCheck = checkRoomAvailability($room, $rawDays, $parsedStartTime, $parsedEndTime);
                         if (!$roomCheck['available']) {
                             $hasConflict = true;
                             $conflictWith = $roomCheck['conflict']['className'] . ' (' . $roomCheck['conflict']['startTime'] . ' - ' . $roomCheck['conflict']['endTime'] . ')';
@@ -651,7 +864,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         }
                     }
                     
-                    $formattedDate = $parsedDate ? date('d/m/Y', strtotime($parsedDate)) : 'N/A';
                     $formattedStartTime = date('g:i A', strtotime($parsedStartTime));
                     $formattedEndTime = date('g:i A', strtotime($parsedEndTime));
                     
@@ -660,13 +872,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         'name' => trim($data[1]),
                         'room' => $room,
                         'instructor' => $instructor,
-                        'date' => $formattedDate,
+                        'date' => $rawDays,
                         'time' => $formattedStartTime . ' - ' . $formattedEndTime,
                         'corrections' => $corrections
                     ];
                     
-                    // If there's a conflict, DON'T add to database - just track as skipped
-                    if ($hasConflict) {
+                    // If there's a conflict or duplicate, DON'T add to database - just track as skipped
+                    if ($hasConflict || $isDuplicate) {
+                        if ($isDuplicate) {
+                            $conflictDetails['_reason'] = 'Duplicate schedule';
+                        }
                         $itemInfo['conflictWith'] = $conflictDetails;
                         $conflictList[] = $itemInfo;
                     } else {
@@ -676,12 +891,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             'className' => trim($data[1]),
                             'room' => $room,
                             'instructor' => $instructor,
-                            'date' => $parsedDate,
+                            'days' => $rawDays,
                             'startTime' => $parsedStartTime,
                             'endTime' => $parsedEndTime,
                             'department' => $rawDepartment,
                             'classSize' => intval($data[8] ?? 0),
-                            'days' => !empty(trim($data[9] ?? '')) ? explode('/', trim($data[9])) : [],
                             'hasConflict' => false,
                             'conflictWith' => null
                         ];
@@ -715,12 +929,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $maxId++;
                     $corrections = [];
                     
-                    // Smart parse date
-                    $rawDate = trim($data[4]);
-                    $dateResult = smartParseDate($rawDate);
-                    $parsedDate = $dateResult['parsed'] ?? $rawDate;
-                    if ($dateResult['corrected'] && $dateResult['parsed']) {
-                        $corrections[] = "Date: '{$rawDate}' → '" . date('d/m/Y', strtotime($parsedDate)) . "'";
+                    // Days field (column index 4)
+                    $rawDays = trim($data[4] ?? '');
+                    
+                    // Validate days - skip row if empty
+                    if (empty($rawDays)) {
+                        $skipCount++;
+                        $skippedList[] = [
+                            'code' => trim($data[0]),
+                            'name' => trim($data[1] ?? ''),
+                            'reason' => 'No days specified'
+                        ];
+                        continue;
                     }
                     
                     // Smart parse times
@@ -754,7 +974,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         $corrections[] = "Instructor: '{$rawInstructor}' → '{$instructor}'";
                     }
                     
-                    $formattedDate = $parsedDate ? date('d/m/Y', strtotime($parsedDate)) : $rawDate;
                     $formattedStartTime = date('g:i A', strtotime($parsedStartTime));
                     $formattedEndTime = date('g:i A', strtotime($parsedEndTime));
                     
@@ -765,42 +984,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         'name' => trim($data[1]),
                         'room' => $room,
                         'instructor' => $instructor,
-                        'date' => $formattedDate,
+                        'date' => $rawDays,
                         'time' => $formattedStartTime . ' - ' . $formattedEndTime,
                         'corrections' => $corrections
                     ];
                     
-                    // Check for room conflict in session data
-                    $hasConflict = false;
-                    $conflictDetails = null;
-                    
-                    if (!empty($room) && !empty($parsedDate)) {
-                        // Check against existing session schedules
-                        foreach ($_SESSION['schedules'] as $existingSched) {
-                            if ($existingSched['room'] === $room && $existingSched['date'] === $parsedDate) {
-                                $existingStart = strtotime($existingSched['startTime']);
-                                $existingEnd = strtotime($existingSched['endTime']);
-                                $newStart = strtotime($parsedStartTime);
-                                $newEnd = strtotime($parsedEndTime);
-                                
-                                // Check time overlap
-                                if ($newStart < $existingEnd && $newEnd > $existingStart) {
-                                    $hasConflict = true;
-                                    $conflictDetails = [
-                                        'classCode' => $existingSched['classCode'],
-                                        'className' => $existingSched['className'],
-                                        'startTime' => date('g:i A', $existingStart),
-                                        'endTime' => date('g:i A', $existingEnd),
-                                        'instructor' => $existingSched['instructor']
-                                    ];
-                                    $conflictCount++;
-                                    break;
-                                }
-                            }
+                    // Check for duplicate schedule (same class code + overlapping day/time)
+                    $isDuplicate = false;
+                    if (!empty($classCode) && !empty($rawDays)) {
+                        $dupCheck = checkDuplicateSchedule($classCode, $rawDays, $parsedStartTime, $parsedEndTime);
+                        if ($dupCheck['duplicate']) {
+                            $isDuplicate = true;
+                            $conflictDetails = $dupCheck['existing'];
+                            $conflictCount++;
                         }
                     }
                     
-                    if ($hasConflict) {
+                    // Check for room conflict using days-based check
+                    $hasConflict = false;
+                    
+                    if (!$isDuplicate && !empty($room) && !empty($rawDays)) {
+                        $roomCheck = checkRoomAvailability($room, $rawDays, $parsedStartTime, $parsedEndTime);
+                        if (!$roomCheck['available']) {
+                            $hasConflict = true;
+                            $conflictDetails = $roomCheck['conflict'];
+                            $conflictCount++;
+                        }
+                    }
+                    
+                    if ($hasConflict || $isDuplicate) {
                         // Don't add - track as skipped
                         $itemInfo['conflictWith'] = $conflictDetails;
                         $conflictList[] = $itemInfo;
@@ -812,7 +1024,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             'className' => htmlspecialchars(trim($data[1])),
                             'room' => htmlspecialchars($room),
                             'instructor' => htmlspecialchars($instructor),
-                            'date' => htmlspecialchars($parsedDate),
+                            'days' => htmlspecialchars($rawDays),
                             'startTime' => htmlspecialchars($parsedStartTime),
                             'endTime' => htmlspecialchars($parsedEndTime)
                         ];
@@ -841,13 +1053,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             'corrections_count' => count($correctionsList ?? []),
             'success_list' => $successList,
             'conflict_list' => $conflictList,
-            'corrections_list' => $correctionsList ?? []
+            'corrections_list' => $correctionsList ?? [],
+            'skip_count' => $skipCount,
+            'skipped_list' => $skippedList
         ];
         
+        $warnings = [];
         if ($conflictCount > 0) {
-            $_SESSION['warning'] = '⚠️ ' . $conflictCount . ' schedule(s) were SKIPPED due to room conflicts. See details below.';
+            $warnings[] = $conflictCount . ' schedule(s) were SKIPPED due to room conflicts.';
         }
-        $_SESSION['success'] = $importCount . ' schedule(s) imported successfully!' . ($conflictCount > 0 ? ' (' . $conflictCount . ' skipped due to conflicts)' : '');
+        if ($skipCount > 0) {
+            $warnings[] = $skipCount . ' schedule(s) were SKIPPED because no days were specified.';
+        }
+        if (!empty($warnings)) {
+            $_SESSION['warning'] = '⚠️ ' . implode(' ', $warnings) . ' See details below.';
+        }
+        $_SESSION['success'] = $importCount . ' schedule(s) imported successfully!' . ($conflictCount + $skipCount > 0 ? ' (' . ($conflictCount + $skipCount) . ' skipped)' : '');
     } else {
         $_SESSION['error'] = 'Failed to upload file. Please try again.';
     }
@@ -865,7 +1086,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         'className' => $_POST['className'] ?? '',
         'scheduleRoom' => $_POST['scheduleRoom'] ?? '',
         'instructor' => $_POST['instructor'] ?? '',
-        'scheduleDate' => $_POST['scheduleDate'] ?? '',
+        'scheduleDays' => $_POST['scheduleDays'] ?? '',
         'startTime' => $_POST['startTime'] ?? '',
         'endTime' => $_POST['endTime'] ?? ''
     ];
@@ -879,15 +1100,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $editMode = true;
         $editScheduleId = $editId;
     } else {
-        // Validate schedule time (check for AM/PM issues)
-        $timeValidation = validateScheduleTime(
-            $_POST['scheduleDate'] ?? '',
-            $_POST['startTime'] ?? '',
-            $_POST['endTime'] ?? ''
-        );
-        
-        if (!$timeValidation['valid']) {
-            $validationError = $timeValidation['message'];
+        // Validate day selection
+        if (empty($_POST['scheduleDays'])) {
+            $validationError = 'Please select at least one day.';
             $showForm = true;
             $editMode = true;
             $editScheduleId = $editId;
@@ -895,7 +1110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             // Check room availability (exclude current schedule)
             $roomCheck = checkRoomAvailability(
                 $_POST['scheduleRoom'] ?? '',
-                $_POST['scheduleDate'] ?? '',
+                $_POST['scheduleDays'] ?? '',
                 $_POST['startTime'] ?? '',
                 $_POST['endTime'] ?? '',
                 $editId
@@ -908,20 +1123,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $editMode = true;
                 $editScheduleId = $editId;
             } else {
+                // Check for duplicate schedule (exclude current)
+                $dupCheck = checkDuplicateSchedule(
+                    $_POST['classCode'] ?? '',
+                    $_POST['scheduleDays'] ?? '',
+                    $_POST['startTime'] ?? '',
+                    $_POST['endTime'] ?? '',
+                    $editId
+                );
+                
+                if ($dupCheck['duplicate']) {
+                    $dup = $dupCheck['existing'];
+                    $validationError = "Duplicate schedule! \"{$dup['classCode']} - {$dup['className']}\" is already scheduled on {$dup['days']} from {$dup['startTime']} to {$dup['endTime']} in {$dup['room']}.";
+                    $showForm = true;
+                    $editMode = true;
+                    $editScheduleId = $editId;
+                } else {
                 // Validation passed, proceed with update
                 if ($useDatabase) {
                     $updateData = [
                         'classCode' => htmlspecialchars($_POST['classCode'] ?? ''),
                         'className' => htmlspecialchars($_POST['className'] ?? ''),
                         'room' => htmlspecialchars($_POST['scheduleRoom'] ?? ''),
-                    'instructor' => htmlspecialchars($_POST['instructor'] ?? ''),
-                    'date' => htmlspecialchars($_POST['scheduleDate'] ?? ''),
-                    'startTime' => htmlspecialchars($_POST['startTime'] ?? ''),
-                    'endTime' => htmlspecialchars($_POST['endTime'] ?? ''),
-                    'department' => htmlspecialchars($_POST['department'] ?? ''),
-                    'classSize' => intval($_POST['classSize'] ?? 0),
-                    'days' => isset($_POST['days']) ? $_POST['days'] : []
-                ];
+                        'instructor' => htmlspecialchars($_POST['instructor'] ?? ''),
+                        'days' => htmlspecialchars($_POST['scheduleDays'] ?? ''),
+                        'startTime' => htmlspecialchars($_POST['startTime'] ?? ''),
+                        'endTime' => htmlspecialchars($_POST['endTime'] ?? ''),
+                        'department' => htmlspecialchars($_POST['department'] ?? ''),
+                        'classSize' => intval($_POST['classSize'] ?? 0)
+                    ];
                 if (updateSchedule($editId, $updateData)) {
                     $_SESSION['success'] = 'Schedule updated successfully!';
                 } else {
@@ -935,7 +1165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                         $schedule['className'] = htmlspecialchars($_POST['className'] ?? '');
                         $schedule['room'] = htmlspecialchars($_POST['scheduleRoom'] ?? '');
                         $schedule['instructor'] = htmlspecialchars($_POST['instructor'] ?? '');
-                        $schedule['date'] = htmlspecialchars($_POST['scheduleDate'] ?? '');
+                        $schedule['days'] = htmlspecialchars($_POST['scheduleDays'] ?? '');
                         $schedule['startTime'] = htmlspecialchars($_POST['startTime'] ?? '');
                         $schedule['endTime'] = htmlspecialchars($_POST['endTime'] ?? '');
                         break;
@@ -946,6 +1176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             }
             header('Location: ?page=schedule');
             exit();
+            }
             }
         }
     }
@@ -976,7 +1207,7 @@ if (isset($_GET['edit_schedule']) && !$showForm) {
             'className' => $editScheduleData['className'] ?? '',
             'scheduleRoom' => $editScheduleData['room'] ?? '',
             'instructor' => $editScheduleData['instructor'] ?? '',
-            'scheduleDate' => $editScheduleData['date'] ?? '',
+            'scheduleDays' => $editScheduleData['days'] ?? '',
             'startTime' => $editScheduleData['startTime'] ?? '',
             'endTime' => $editScheduleData['endTime'] ?? ''
         ];
@@ -1071,9 +1302,9 @@ usort($schedules, function($a, $b) {
                             <thead>
                                 <tr style="background: #f8d7da;">
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Code</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Class Name</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Course Name</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Room</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Date</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Days</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Time</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Conflicts With</th>
                                 </tr>
@@ -1098,6 +1329,34 @@ usort($schedules, function($a, $b) {
                 </details>
                 <?php endif; ?>
                 
+                <?php if (!empty($importResults['skipped_list'])): ?>
+                <details style="margin-bottom: 15px;">
+                    <summary style="cursor: pointer; font-weight: bold; color: #856404; padding: 10px; background: #fff3cd; border-radius: 6px;">
+                        ⚠️ Skipped - Missing Days (<?php echo count($importResults['skipped_list']); ?>) - These were NOT added
+                    </summary>
+                    <div style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr style="background: #ffeeba;">
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Code</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Course Name</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($importResults['skipped_list'] as $skipped): ?>
+                                <tr style="background: #fffbea;">
+                                    <td style="padding: 8px; border: 1px solid #ddd;"><?php echo htmlspecialchars($skipped['code']); ?></td>
+                                    <td style="padding: 8px; border: 1px solid #ddd;"><?php echo htmlspecialchars($skipped['name']); ?></td>
+                                    <td style="padding: 8px; border: 1px solid #ddd; color: #856404;">⚠️ <?php echo htmlspecialchars($skipped['reason']); ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </details>
+                <?php endif; ?>
+                
                 <?php if (!empty($importResults['success_list'])): ?>
                 <details>
                     <summary style="cursor: pointer; font-weight: bold; color: #155724; padding: 10px; background: #f0fff0; border-radius: 6px;">
@@ -1108,10 +1367,10 @@ usort($schedules, function($a, $b) {
                             <thead>
                                 <tr style="background: #d4edda;">
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Code</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Class Name</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Course Name</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Room</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Instructor</th>
-                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Date</th>
+                                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Days</th>
                                     <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Time</th>
                                 </tr>
                             </thead>
@@ -1152,7 +1411,7 @@ usort($schedules, function($a, $b) {
         <!-- CSV Import Section -->
         <div id="csvImportSection" class="card form-card" style="display: none; margin-top: 20px;">
             <h3>Import Schedules from CSV</h3>
-            <p class="subtitle">CSV format: Class Code, Class Name, Room, Instructor, Date (YYYY-MM-DD), Start Time (HH:MM), End Time (HH:MM)</p>
+            <p class="subtitle">CSV format: Class Code, Course Name, Room, Instructor, Days (e.g. Monday/Wednesday), Start Time (HH:MM), End Time (HH:MM)</p>
             <form method="POST" enctype="multipart/form-data" id="csvImportForm">
                 <input type="hidden" name="action" value="import_csv">
                 <div class="upload-area" id="uploadArea" onclick="document.getElementById('csvFile').click()" ondrop="handleDrop(event)" ondragover="allowDrop(event)" ondragleave="handleDragLeave(event)">
@@ -1188,11 +1447,22 @@ usort($schedules, function($a, $b) {
                     <div class="form-row">
                         <div class="form-group">
                             <label>Class Code</label>
-                            <input type="text" name="classCode" required placeholder="e.g., CIT18, CC3" value="<?php echo htmlspecialchars($formData['classCode']); ?>">
+                            <select name="classCode" id="classCodeSelect" required onchange="autoFillClassName()">
+                                <option value="">-- Select Class Code --</option>
+                                <?php foreach ($coursesByYear as $yearLabel => $courses): ?>
+                                <optgroup label="<?php echo htmlspecialchars($yearLabel); ?>">
+                                    <?php foreach ($courses as $code => $name): ?>
+                                    <option value="<?php echo htmlspecialchars($code); ?>" <?php echo ($formData['classCode'] === $code) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($code); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="form-group">
-                            <label>Class Name</label>
-                            <input type="text" name="className" required placeholder="e.g., Introduction to OOP, Mastery of Web" value="<?php echo htmlspecialchars($formData['className']); ?>">
+                            <label>Course Name</label>
+                            <input type="text" name="className" id="classNameInput" required readonly placeholder="Auto-filled from Class Code" value="<?php echo htmlspecialchars($formData['className']); ?>" style="background-color: #f5f5f5;">
                         </div>
                     </div>
                     <div class="form-row">
@@ -1206,20 +1476,56 @@ usort($schedules, function($a, $b) {
                 
                 <!-- Schedule Time (Before Room Selection) -->
                 <div class="form-section" style="margin-bottom: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
-                    <h4 style="color: #555; margin-bottom: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">📅 Schedule Date & Time</h4>
-                    <p style="color: #666; font-size: 13px; margin-bottom: 12px;">Select date and time first to check room availability</p>
+                    <h4 style="color: #555; margin-bottom: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">📅 Schedule Days & Time</h4>
+                    <p style="color: #666; font-size: 13px; margin-bottom: 12px;">Select days and time slot for the schedule</p>
+                    
+                    <!-- Day Selection Buttons -->
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 8px;">Days</label>
+                        <div id="dayButtonsContainer" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            <?php 
+                            $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                            $selectedDays = isset($formData['scheduleDays']) ? (is_array($formData['scheduleDays']) ? $formData['scheduleDays'] : explode('/', $formData['scheduleDays'])) : [];
+                            foreach ($days as $day): 
+                                $isSelected = in_array($day, $selectedDays) || in_array(strtolower($day), $selectedDays);
+                            ?>
+                            <button type="button" 
+                                    class="day-btn <?php echo $isSelected ? 'selected' : ''; ?>" 
+                                    data-day="<?php echo $day; ?>"
+                                    onclick="toggleDay(this)"
+                                    style="padding: 10px 16px; border: 2px solid <?php echo $isSelected ? '#28a745' : '#ddd'; ?>; 
+                                           background: <?php echo $isSelected ? '#28a745' : '#fff'; ?>; 
+                                           color: <?php echo $isSelected ? '#fff' : '#333'; ?>; 
+                                           border-radius: 6px; cursor: pointer; font-weight: 500; transition: all 0.2s;">
+                                <?php echo $day; ?>
+                            </button>
+                            <?php endforeach; ?>
+                        </div>
+                        <input type="hidden" name="scheduleDays" id="scheduleDaysInput" value="<?php echo htmlspecialchars(is_array($formData['scheduleDays'] ?? '') ? implode('/', $formData['scheduleDays']) : ($formData['scheduleDays'] ?? '')); ?>">
+                        <small style="color: #666; font-size: 12px; margin-top: 6px; display: block;">Click to select/deselect days. At least one day is required.</small>
+                    </div>
+                    
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Date</label>
-                            <input type="date" name="scheduleDate" required value="<?php echo htmlspecialchars($formData['scheduleDate']); ?>">
-                        </div>
-                        <div class="form-group">
                             <label>Start Time</label>
-                            <input type="time" name="startTime" required value="<?php echo htmlspecialchars($formData['startTime']); ?>">
+                            <select name="startTime" id="startTimeSelect" required onchange="autoFillEndTime()">
+                                <option value="">-- Select Time --</option>
+                                <?php foreach ($fixedTimeSlots as $start => $end): 
+                                    $startDisplay = date('g:i A', strtotime($start));
+                                ?>
+                                <option value="<?php echo $start; ?>" <?php echo ($formData['startTime'] === $start) ? 'selected' : ''; ?>>
+                                    <?php echo $startDisplay; ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>End Time</label>
-                            <input type="time" name="endTime" required value="<?php echo htmlspecialchars($formData['endTime']); ?>">
+                            <input type="text" name="endTimeDisplay" id="endTimeDisplay" readonly required 
+                                   value="<?php echo !empty($formData['endTime']) ? date('g:i A', strtotime($formData['endTime'])) : ''; ?>" 
+                                   style="background-color: #e9ecef; cursor: not-allowed;"
+                                   placeholder="Auto-filled">
+                            <input type="hidden" name="endTime" id="endTimeValue" value="<?php echo htmlspecialchars($formData['endTime']); ?>">
                         </div>
                     </div>
                 </div>
@@ -1253,83 +1559,110 @@ usort($schedules, function($a, $b) {
         <!-- Schedule Calendar View -->
         <div id="scheduleView" style="margin-top: 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                <h3 style="color: #333; font-size: 18px; margin: 0;">Upcoming Classes</h3>
+                <h3 style="color: #333; font-size: 18px; margin: 0;">Schedule Overview</h3>
                 <?php if (!empty($schedules)): ?>
                 <a href="?page=schedule&clear_all_schedules=confirm" class="btn-small btn-danger" 
                    onclick="return confirm('Are you sure you want to delete ALL schedules? This action cannot be undone!')">Clear All</a>
                 <?php endif; ?>
             </div>
-            <div class="schedule-list">
-                <?php if (empty($schedules)): ?>
-                    <p style="text-align: center; color: #999; grid-column: 1 / -1;">No schedules available</p>
-                <?php else: ?>
-                    <?php foreach ($schedules as $schedule): 
-                        // Format times to 12-hour AM/PM format
-                        $startFormatted = date('g:i A', strtotime($schedule['startTime']));
-                        $endFormatted = date('g:i A', strtotime($schedule['endTime']));
-                        $hasConflict = !empty($schedule['hasConflict']);
-                        $conflictStyle = $hasConflict ? 'border: 2px solid #dc3545; background: #fff5f5;' : '';
-                    ?>
-                        <article class="schedule-item<?php echo $hasConflict ? ' has-conflict' : ''; ?>" style="<?php echo $conflictStyle; ?>">
-                            <?php if ($hasConflict): ?>
-                            <div class="conflict-warning" style="background: #dc3545; color: white; padding: 6px 10px; font-size: 12px; border-radius: 4px 4px 0 0; margin: -12px -12px 10px -12px;">
-                                ⚠️ CONFLICT: <?php echo htmlspecialchars($schedule['conflictWith'] ?? 'Room already booked'); ?>
-                            </div>
-                            <?php endif; ?>
-                            <div class="schedule-header">
-                                <div class="schedule-time">
-                                    <p class="time-slot"><?php echo $startFormatted . ' - ' . $endFormatted; ?></p>
+
+            <?php if (empty($schedules)): ?>
+                <p style="text-align: center; color: #999;">No schedules available</p>
+            <?php else: ?>
+                <?php
+                // Group schedules by year level
+                $schedulesByYear = ['1st Year' => [], '2nd Year' => [], '3rd Year' => [], 'Other' => []];
+                foreach ($schedules as $schedule) {
+                    $code = $schedule['classCode'] ?? '';
+                    $year = $courseYearMap[$code] ?? 'Other';
+                    $schedulesByYear[$year][] = $schedule;
+                }
+                // Remove empty groups and 'Other' if empty
+                $schedulesByYear = array_filter($schedulesByYear);
+                ?>
+
+                <?php foreach ($schedulesByYear as $yearLabel => $yearSchedules): ?>
+                <div style="margin-bottom: 28px;">
+                    <h4 style="color: #1a73e8; font-size: 16px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #1a73e8;">
+                        📚 <?php echo htmlspecialchars($yearLabel); ?> Schedules
+                        <span style="font-size: 13px; color: #666; font-weight: normal; margin-left: 8px;">(<?php echo count($yearSchedules); ?> class<?php echo count($yearSchedules) !== 1 ? 'es' : ''; ?>)</span>
+                    </h4>
+                    <div class="schedule-list">
+                        <?php foreach ($yearSchedules as $schedule): 
+                            // Format times to 12-hour AM/PM format
+                            $startFormatted = date('g:i A', strtotime($schedule['startTime']));
+                            $endFormatted = date('g:i A', strtotime($schedule['endTime']));
+                            $hasConflict = !empty($schedule['hasConflict']);
+                            $conflictStyle = $hasConflict ? 'border: 2px solid #dc3545; background: #fff5f5;' : '';
+                        ?>
+                            <article class="schedule-item<?php echo $hasConflict ? ' has-conflict' : ''; ?>" style="<?php echo $conflictStyle; ?>">
+                                <?php if ($hasConflict): ?>
+                                <div class="conflict-warning" style="background: #dc3545; color: white; padding: 6px 10px; font-size: 12px; border-radius: 4px 4px 0 0; margin: -12px -12px 10px -12px;">
+                                    ⚠️ CONFLICT: <?php echo htmlspecialchars($schedule['conflictWith'] ?? 'Room already booked'); ?>
                                 </div>
-                                <div class="schedule-actions">
-                                    <button class="btn-small" onclick="editSchedule(<?php echo $schedule['id']; ?>)" aria-label="Edit schedule">Edit</button>
-                                    <a href="?page=schedule&delete_schedule=<?php echo $schedule['id']; ?>" class="btn-small btn-danger" onclick="return confirm('Are you sure you want to delete this schedule?')" aria-label="Delete schedule">Delete</a>
+                                <?php endif; ?>
+                                <div class="schedule-header">
+                                    <div class="schedule-time">
+                                        <p class="time-slot"><?php echo $startFormatted . ' - ' . $endFormatted; ?></p>
+                                    </div>
+                                    <div class="schedule-actions">
+                                        <button class="btn-small" onclick="editSchedule(<?php echo $schedule['id']; ?>)" aria-label="Edit schedule">Edit</button>
+                                        <a href="?page=schedule&delete_schedule=<?php echo $schedule['id']; ?>" class="btn-small btn-danger" onclick="return confirm('Are you sure you want to delete this schedule?')" aria-label="Delete schedule">Delete</a>
+                                    </div>
                                 </div>
-                            </div>
-                                        <div class="schedule-details">
-                                <h4 class="schedule-title"><?php echo htmlspecialchars($schedule['className']); ?></h4>
-                                <?php 
-                                    // Get room building/floor info
-                                    $roomBuildingInfo = '';
-                                    $roomData = null;
-                                    
-                                    // Try to find room by roomId first
-                                    if (!empty($schedule['roomId'])) {
-                                        $roomData = getRoomById($schedule['roomId']);
-                                    }
-                                    
-                                    // If no roomData yet, try to find by matching room display name
-                                    if (!$roomData && !empty($schedule['room'])) {
-                                        $allRoomOptions = getRoomsAsOptions();
-                                        foreach ($allRoomOptions as $roomOpt) {
-                                            if ($roomOpt['label'] === $schedule['room']) {
-                                                $roomData = getRoomById($roomOpt['value']);
-                                                break;
+                                <div class="schedule-details">
+                                    <h4 class="schedule-title"><?php echo htmlspecialchars($schedule['className']); ?></h4>
+                                    <?php 
+                                        // Get room building/floor info
+                                        $roomBuildingInfo = '';
+                                        $roomData = null;
+                                        
+                                        // Try to find room by roomId first
+                                        if (!empty($schedule['roomId'])) {
+                                            $roomData = getRoomById($schedule['roomId']);
+                                        }
+                                        
+                                        // If no roomData yet, try to find by matching room display name
+                                        if (!$roomData && !empty($schedule['room'])) {
+                                            $allRoomOptions = getRoomsAsOptions();
+                                            foreach ($allRoomOptions as $roomOpt) {
+                                                if ($roomOpt['label'] === $schedule['room']) {
+                                                    $roomData = getRoomById($roomOpt['value']);
+                                                    break;
+                                                }
                                             }
                                         }
-                                    }
-                                    
-                                    if ($roomData) {
-                                        $buildingData = getBuildingById($roomData['building']);
-                                        $buildingName = $buildingData ? $buildingData['fullName'] : ($roomData['building'] ?? 'Unknown');
-                                        $floorNum = $roomData['floor'] ?? 1;
-                                        $floorSuffix = ($floorNum == 1 ? 'st' : ($floorNum == 2 ? 'nd' : ($floorNum == 3 ? 'rd' : 'th')));
-                                        $roomBuildingInfo = $buildingName . ' - ' . $floorNum . $floorSuffix . ' Floor';
-                                    }
-                                ?>
-                                <div class="schedule-meta">
-                                    <span><strong>Code:</strong> <?php echo htmlspecialchars($schedule['classCode'] ?? 'N/A'); ?></span>
-                                    <span><strong>Room:</strong> <?php echo htmlspecialchars($schedule['room']); ?></span>
-                                    <?php if (!empty($roomBuildingInfo)): ?>
-                                    <span><strong>Location:</strong> <?php echo htmlspecialchars($roomBuildingInfo); ?></span>
-                                    <?php endif; ?>
-                                    <span><strong>Instructor:</strong> <?php echo htmlspecialchars($schedule['instructor']); ?></span>
-                                    <span><strong>Date:</strong> <?php echo date('d/m/Y', strtotime($schedule['date'])); ?></span>
+                                        
+                                        if ($roomData) {
+                                            $buildingData = getBuildingById($roomData['building']);
+                                            $buildingName = $buildingData ? $buildingData['fullName'] : ($roomData['building'] ?? 'Unknown');
+                                            $floorNum = $roomData['floor'] ?? 1;
+                                            $floorSuffix = ($floorNum == 1 ? 'st' : ($floorNum == 2 ? 'nd' : ($floorNum == 3 ? 'rd' : 'th')));
+                                            $roomBuildingInfo = $buildingName . ' - ' . $floorNum . $floorSuffix . ' Floor';
+                                        }
+                                    ?>
+                                    <div class="schedule-meta">
+                                        <span><strong>Code:</strong> <?php echo htmlspecialchars($schedule['classCode'] ?? 'N/A'); ?></span>
+                                        <span><strong>Room:</strong> <?php echo htmlspecialchars($schedule['room']); ?></span>
+                                        <?php if (!empty($roomBuildingInfo)): ?>
+                                        <span><strong>Location:</strong> <?php echo htmlspecialchars($roomBuildingInfo); ?></span>
+                                        <?php endif; ?>
+                                        <span><strong>Instructor:</strong> <?php echo htmlspecialchars($schedule['instructor']); ?></span>
+                                        <span><strong>Days:</strong> <?php 
+                                            $daysDisplay = $schedule['days'] ?? 'Not set';
+                                            if (is_array($daysDisplay)) {
+                                                $daysDisplay = implode('/', $daysDisplay);
+                                            }
+                                            echo htmlspecialchars($daysDisplay);
+                                        ?></span>
+                                    </div>
                                 </div>
-                            </div>
-                        </article>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 </section>
@@ -1512,6 +1845,103 @@ function formatFileSize(bytes) {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
+// ===== CLASS CODE AUTO-FILL =====
+const curriculumCourses = <?php echo json_encode($curriculumCourses); ?>;
+
+function autoFillClassName() {
+    const classCodeSelect = document.getElementById('classCodeSelect');
+    const classNameInput = document.getElementById('classNameInput');
+    
+    if (!classCodeSelect || !classNameInput) return;
+    
+    const selectedCode = classCodeSelect.value;
+    
+    if (selectedCode && curriculumCourses[selectedCode]) {
+        classNameInput.value = curriculumCourses[selectedCode];
+    } else {
+        classNameInput.value = '';
+    }
+}
+
+// Auto-fill on page load if class code is already selected
+document.addEventListener('DOMContentLoaded', function() {
+    const classCodeSelect = document.getElementById('classCodeSelect');
+    if (classCodeSelect && classCodeSelect.value) {
+        autoFillClassName();
+    }
+    // Also auto-fill end time if start time is already selected
+    const startTimeSelect = document.getElementById('startTimeSelect');
+    if (startTimeSelect && startTimeSelect.value) {
+        autoFillEndTime();
+    }
+});
+
+// ===== TIME SLOT AUTO-FILL =====
+const fixedTimeSlots = <?php echo json_encode($fixedTimeSlots); ?>;
+
+// ===== DAY SELECTION =====
+function toggleDay(btn) {
+    const day = btn.dataset.day;
+    const input = document.getElementById('scheduleDaysInput');
+    let selectedDays = input.value ? input.value.split('/') : [];
+    
+    if (btn.classList.contains('selected')) {
+        // Deselect
+        btn.classList.remove('selected');
+        btn.style.borderColor = '#ddd';
+        btn.style.background = '#fff';
+        btn.style.color = '#333';
+        selectedDays = selectedDays.filter(d => d.toLowerCase() !== day.toLowerCase());
+    } else {
+        // Select
+        btn.classList.add('selected');
+        btn.style.borderColor = '#28a745';
+        btn.style.background = '#28a745';
+        btn.style.color = '#fff';
+        if (!selectedDays.includes(day)) {
+            selectedDays.push(day);
+        }
+    }
+    
+    input.value = selectedDays.join('/');
+    
+    // Trigger room availability check
+    checkRoomAvailability();
+}
+
+function getSelectedDays() {
+    const input = document.getElementById('scheduleDaysInput');
+    return input.value ? input.value.split('/') : [];
+}
+
+function autoFillEndTime() {
+    const startTimeSelect = document.getElementById('startTimeSelect');
+    const endTimeDisplay = document.getElementById('endTimeDisplay');
+    const endTimeValue = document.getElementById('endTimeValue');
+    
+    if (!startTimeSelect || !endTimeDisplay || !endTimeValue) return;
+    
+    const selectedStart = startTimeSelect.value;
+    
+    if (selectedStart && fixedTimeSlots[selectedStart]) {
+        const endTime24 = fixedTimeSlots[selectedStart];
+        endTimeValue.value = endTime24;
+        
+        // Convert to 12-hour format for display
+        const [hours, minutes] = endTime24.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const hour12 = hour % 12 || 12;
+        endTimeDisplay.value = hour12 + ':' + minutes + ' ' + ampm;
+    } else {
+        endTimeValue.value = '';
+        endTimeDisplay.value = '';
+    }
+    
+    // Trigger room availability check
+    checkRoomAvailability();
+}
+
 // ===== ROOM AVAILABILITY CHECKING =====
 const selectedRoom = <?php echo json_encode($formData['scheduleRoom']); ?>;
 const editScheduleId = <?php echo $editMode ? $editScheduleId : 'null'; ?>;
@@ -1527,24 +1957,24 @@ function getFloorSuffix(n) {
 }
 
 function checkRoomAvailability() {
-    const dateInput = document.querySelector('input[name="scheduleDate"]');
-    const startTimeInput = document.querySelector('input[name="startTime"]');
-    const endTimeInput = document.querySelector('input[name="endTime"]');
+    const scheduleDaysInput = document.getElementById('scheduleDaysInput');
+    const startTimeSelect = document.getElementById('startTimeSelect');
+    const endTimeValue = document.getElementById('endTimeValue');
     const roomInput = document.getElementById('roomSearchInput');
     const statusDiv = document.getElementById('roomAvailabilityStatus');
     const dropdown = document.getElementById('roomDropdown');
     
-    const date = dateInput?.value || '';
-    const startTime = startTimeInput?.value || '';
-    const endTime = endTimeInput?.value || '';
+    const days = scheduleDaysInput?.value || '';
+    const startTime = startTimeSelect?.value || '';
+    const endTime = endTimeValue?.value || '';
     
-    // Reset room input if date/time not complete
-    if (!date || !startTime || !endTime) {
-        roomInput.placeholder = '-- Select date & time first --';
+    // Reset room input if days/time not complete
+    if (!days || !startTime || !endTime) {
+        roomInput.placeholder = '-- Select days & time first --';
         roomInput.disabled = true;
         allRooms = [];
         availableRoomLabels = [];
-        statusDiv.innerHTML = '<span style="color: #666;">📅 Please select date, start time, and end time to see available rooms</span>';
+        statusDiv.innerHTML = '<span style="color: #666;">📅 Please select days and time slot to see available rooms</span>';
         return;
     }
     
@@ -1559,8 +1989,8 @@ function checkRoomAvailability() {
     roomInput.disabled = true;
     statusDiv.innerHTML = '<span style="color: #666;">🔄 Checking room availability...</span>';
     
-    // Build URL with parameters
-    let url = `?check_room_availability=1&date=${encodeURIComponent(date)}&start_time=${encodeURIComponent(startTime)}&end_time=${encodeURIComponent(endTime)}`;
+    // Build URL with parameters - using days instead of date
+    let url = `?check_room_availability=1&days=${encodeURIComponent(days)}&start_time=${encodeURIComponent(startTime)}&end_time=${encodeURIComponent(endTime)}`;
     if (editScheduleId) {
         url += `&exclude_id=${editScheduleId}`;
     }
@@ -1672,13 +2102,13 @@ function validateRoomInput() {
 // Validate date and time - reject past dates and past times
 function validateDateTimeSchedule(showAlert = false) {
     const dateInput = document.querySelector('input[name="scheduleDate"]');
-    const startTimeInput = document.querySelector('input[name="startTime"]');
+    const startTimeSelect = document.getElementById('startTimeSelect');
     const statusDiv = document.getElementById('roomAvailabilityStatus');
     
     if (!dateInput) return true;
     
     const selectedDate = dateInput.value;
-    const selectedStartTime = startTimeInput?.value || '';
+    const selectedStartTime = startTimeSelect?.value || '';
     
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -1717,13 +2147,13 @@ function validateDateTimeSchedule(showAlert = false) {
             if (statusDiv) {
                 statusDiv.innerHTML = `<span style="color: #dc3545;">⚠️ ${errorMsg}</span>`;
             }
-            startTimeInput.style.borderColor = '#dc3545';
+            startTimeSelect.style.borderColor = '#dc3545';
             return false;
         } else {
-            startTimeInput.style.borderColor = '#28a745';
+            startTimeSelect.style.borderColor = '#28a745';
         }
-    } else if (startTimeInput && startTimeInput.value) {
-        startTimeInput.style.borderColor = '#28a745';
+    } else if (startTimeSelect && startTimeSelect.value) {
+        startTimeSelect.style.borderColor = '#28a745';
     }
     
     return true;
@@ -1732,8 +2162,8 @@ function validateDateTimeSchedule(showAlert = false) {
 // Add event listeners to date/time inputs
 document.addEventListener('DOMContentLoaded', function() {
     const dateInput = document.querySelector('input[name="scheduleDate"]');
-    const startTimeInput = document.querySelector('input[name="startTime"]');
-    const endTimeInput = document.querySelector('input[name="endTime"]');
+    const startTimeSelect = document.getElementById('startTimeSelect');
+    const endTimeValue = document.getElementById('endTimeValue');
     const roomInput = document.getElementById('roomSearchInput');
     const dropdown = document.getElementById('roomDropdown');
     const form = document.getElementById('scheduleForm');
@@ -1751,16 +2181,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Validate start time when changed (no alert, just visual)
-    if (startTimeInput) {
-        startTimeInput.addEventListener('change', function() {
-            if (validateDateTimeSchedule(false)) {
-                checkRoomAvailability();
-            }
-        });
-    }
-    
-    if (endTimeInput) endTimeInput.addEventListener('change', checkRoomAvailability);
+    // Start time select already has onchange handler for autoFillEndTime
+    // which calls checkRoomAvailability
     
     // Form submit validation (with alert)
     if (form) {
@@ -1788,7 +2210,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Check availability on page load if editing or form has values
-    if (dateInput?.value && startTimeInput?.value && endTimeInput?.value) {
+    if (dateInput?.value && startTimeSelect?.value && endTimeValue?.value) {
         checkRoomAvailability();
     }
 });

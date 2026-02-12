@@ -9,22 +9,12 @@ session_start();
 // Check if user is logged in (for security)
 $isLoggedIn = isset($_SESSION['isLoggedIn']) && $_SESSION['isLoggedIn'];
 
-// Auto-detect Railway environment
-$isRailway = getenv('RAILWAY_ENVIRONMENT') !== false || getenv('MYSQLHOST') !== false;
-
-if ($isRailway) {
-    $host = getenv('MYSQLHOST') ?: 'switchyard.proxy.rlwy.net';
-    $port = getenv('MYSQLPORT') ?: '51146';
-    $user = getenv('MYSQLUSER') ?: 'root';
-    $pass = getenv('MYSQLPASSWORD') ?: 'heLcUrNPJSeOIcQJIBfdOlqqzvGGrFqa';
-    $dbname = getenv('MYSQLDATABASE') ?: 'railway';
-} else {
-    $host = 'localhost';
-    $port = '3306';
-    $user = 'root';
-    $pass = '';
-    $dbname = 'ucnexus_db';
-}
+// Local XAMPP Database
+$host = 'localhost';
+$port = '3306';
+$user = 'root';
+$pass = '';
+$dbname = 'ucnexus_db';
 
 $message = '';
 $error = '';

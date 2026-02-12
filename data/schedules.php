@@ -341,7 +341,14 @@ function addSchedule($data) {
         return false;
     }
     
-    $days = is_array($data['days'] ?? null) ? implode(',', $data['days']) : ($data['days'] ?? '');
+    // Normalize days to comma-separated format (form uses '/', database uses ',')
+    $rawDays = $data['days'] ?? '';
+    if (is_array($rawDays)) {
+        $days = implode(',', $rawDays);
+    } else {
+        // Convert '/' to ',' for consistency
+        $days = str_replace('/', ',', $rawDays);
+    }
     
     // Convert empty strings to null for foreign keys
     $departmentId = !empty($data['department']) ? $data['department'] : null;
@@ -382,7 +389,14 @@ function updateSchedule($scheduleId, $data) {
         return false;
     }
     
-    $days = is_array($data['days'] ?? null) ? implode(',', $data['days']) : ($data['days'] ?? '');
+    // Normalize days to comma-separated format (form uses '/', database uses ',')
+    $rawDays = $data['days'] ?? '';
+    if (is_array($rawDays)) {
+        $days = implode(',', $rawDays);
+    } else {
+        // Convert '/' to ',' for consistency
+        $days = str_replace('/', ',', $rawDays);
+    }
     
     // Convert empty strings to null for foreign keys
     $departmentId = !empty($data['department']) ? $data['department'] : null;
@@ -455,6 +469,20 @@ function clearAllSchedules() {
  * Helper function to format schedule from database row
  */
 function formatScheduleFromDB($row) {
+    // Handle days stored with either '/' or ',' delimiter
+    $daysRaw = $row['days'] ?? '';
+    if ($daysRaw) {
+        // If it contains '/', split by '/', otherwise split by ','
+        if (strpos($daysRaw, '/') !== false) {
+            $daysArray = explode('/', $daysRaw);
+        } else {
+            $daysArray = explode(',', $daysRaw);
+        }
+        $daysArray = array_map('trim', $daysArray);
+    } else {
+        $daysArray = [];
+    }
+    
     return [
         'id' => (int)$row['id'],
         'classCode' => $row['class_code'],
@@ -465,7 +493,7 @@ function formatScheduleFromDB($row) {
         'department' => $row['department_id'],
         'classSize' => (int)$row['class_size'],
         'date' => $row['schedule_date'],
-        'days' => $row['days'] ? explode(',', $row['days']) : [],
+        'days' => $daysArray,
         'startTime' => substr($row['start_time'], 0, 5),
         'endTime' => substr($row['end_time'], 0, 5),
         'semester' => $row['semester'],

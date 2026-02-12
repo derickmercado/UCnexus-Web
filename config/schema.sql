@@ -1,5 +1,5 @@
 -- UC Nexus Database Schema
--- Database: railway (Railway Cloud)
+-- Database: ucnexus_db (Local XAMPP)
 
 -- ===============================================
 -- BUILDINGS TABLE

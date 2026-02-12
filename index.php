@@ -19,7 +19,7 @@ if (isset($_GET['export_csv']) && isset($_SESSION['isLoggedIn']) && $_SESSION['i
     $output = fopen('php://output', 'w');
     // Add BOM for Excel UTF-8 compatibility
     fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-    fputcsv($output, ['Class Code', 'Class Name', 'Room', 'Instructor', 'Date', 'Start Time', 'End Time', 'Department', 'Class Size', 'Days']);
+    fputcsv($output, ['Class Code', 'Course Name', 'Room', 'Instructor', 'Days', 'Start Time', 'End Time', 'Department', 'Class Size']);
     
     foreach ($schedules as $schedule) {
         $days = isset($schedule['days']) ? (is_array($schedule['days']) ? implode('/', $schedule['days']) : $schedule['days']) : '';
@@ -28,12 +28,11 @@ if (isset($_GET['export_csv']) && isset($_SESSION['isLoggedIn']) && $_SESSION['i
             $schedule['className'] ?? '',
             $schedule['room'] ?? '',
             $schedule['instructor'] ?? '',
-            $schedule['date'] ?? '',
+            $days,
             $schedule['startTime'] ?? '',
             $schedule['endTime'] ?? '',
             $schedule['department'] ?? '',
-            $schedule['classSize'] ?? '',
-            $days
+            $schedule['classSize'] ?? ''
         ]);
     }
     fclose($output);
@@ -50,10 +49,10 @@ if (isset($_GET['download_template']) && isset($_SESSION['isLoggedIn']) && $_SES
     $output = fopen('php://output', 'w');
     // Add BOM for Excel UTF-8 compatibility
     fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-    fputcsv($output, ['Class Code', 'Class Name', 'Room', 'Instructor', 'Date', 'Start Time', 'End Time', 'Department', 'Class Size', 'Days']);
+    fputcsv($output, ['Class Code', 'Course Name', 'Room', 'Instructor', 'Days', 'Start Time', 'End Time', 'Department', 'Class Size']);
     // Add sample rows
-    fputcsv($output, ['IT101', 'Introduction to Computing', 'M303 - Computer Laboratory', 'Dr. Maria Santos', '2026-02-15', '07:30', '08:50', 'CCS', '40', 'monday/wednesday/friday']);
-    fputcsv($output, ['IT102', 'Web Development', 'M304 - Computer Laboratory', 'Prof. Juan Cruz', '2026-02-16', '08:50', '10:10', 'CCS', '35', 'tuesday/thursday']);
+    fputcsv($output, ['CC1', 'Computing Fundamentals', 'M303 - Computer Laboratory', 'Dr. Maria Santos', 'Monday/Wednesday/Friday', '07:30', '08:50', 'CCS', '40']);
+    fputcsv($output, ['CIT6', 'Capstone Project 1', 'M304 - Computer Laboratory', 'Prof. Juan Cruz', 'Tuesday/Thursday', '08:50', '10:10', 'CCS', '35']);
     fclose($output);
     exit();
 }
@@ -65,10 +64,15 @@ if (isset($_GET['check_room_availability']) && isset($_SESSION['isLoggedIn']) &&
     require_once __DIR__ . '/data/rooms.php';
     require_once __DIR__ . '/data/schedules.php';
     
+    // Support both date (legacy) and days (new)
     $date = $_GET['date'] ?? '';
+    $days = $_GET['days'] ?? '';
     $startTime = $_GET['start_time'] ?? '';
     $endTime = $_GET['end_time'] ?? '';
     $excludeId = isset($_GET['exclude_id']) ? intval($_GET['exclude_id']) : null;
+    
+    // Parse days array
+    $selectedDays = !empty($days) ? array_map('strtolower', explode('/', $days)) : [];
     
     $roomOptions = getRoomsAsOptions();
     $result = [];
@@ -78,8 +82,8 @@ if (isset($_GET['check_room_availability']) && isset($_SESSION['isLoggedIn']) &&
         $available = true;
         $conflictInfo = null;
         
-        // Only check availability if date and times are provided
-        if (!empty($date) && !empty($startTime) && !empty($endTime)) {
+        // Only check availability if times are provided and (days or date)
+        if ((!empty($days) || !empty($date)) && !empty($startTime) && !empty($endTime)) {
             // Get all schedules and check for conflicts
             $allSchedules = getAllSchedules();
             
@@ -89,20 +93,43 @@ if (isset($_GET['check_room_availability']) && isset($_SESSION['isLoggedIn']) &&
                     continue;
                 }
                 
-                // Check if same room and same date
-                if (($schedule['room'] ?? '') === $roomLabel && ($schedule['date'] ?? '') === $date) {
+                // Check if same room
+                if (($schedule['room'] ?? '') !== $roomLabel) {
+                    continue;
+                }
+                
+                // Check for day overlap
+                $scheduleDays = [];
+                if (!empty($schedule['days'])) {
+                    $scheduleDays = is_array($schedule['days']) 
+                        ? array_map('strtolower', $schedule['days']) 
+                        : array_map('strtolower', explode('/', $schedule['days']));
+                }
+                
+                // If using days, check day overlap
+                $dayOverlap = false;
+                if (!empty($selectedDays) && !empty($scheduleDays)) {
+                    $dayOverlap = !empty(array_intersect($selectedDays, $scheduleDays));
+                } elseif (!empty($date) && !empty($schedule['date']) && $schedule['date'] === $date) {
+                    // Legacy date-based check
+                    $dayOverlap = true;
+                }
+                
+                if ($dayOverlap) {
                     $existingStart = $schedule['startTime'] ?? '';
                     $existingEnd = $schedule['endTime'] ?? '';
                     
                     // Check for time overlap
                     if ($startTime < $existingEnd && $endTime > $existingStart) {
                         $available = false;
+                        $conflictDays = !empty($scheduleDays) ? implode('/', $scheduleDays) : ($schedule['date'] ?? '');
                         $conflictInfo = [
                             'className' => $schedule['className'] ?? 'Unknown',
                             'classCode' => $schedule['classCode'] ?? '',
                             'startTime' => date('g:i A', strtotime($existingStart)),
                             'endTime' => date('g:i A', strtotime($existingEnd)),
-                            'instructor' => $schedule['instructor'] ?? ''
+                            'instructor' => $schedule['instructor'] ?? '',
+                            'days' => $conflictDays
                         ];
                         break;
                     }
