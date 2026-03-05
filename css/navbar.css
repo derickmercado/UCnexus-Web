@@ -1,13 +1,15 @@
 /* ===== NAVBAR ===== */
 .navbar {
-    background: linear-gradient(135deg, #1e7e34 0%, #2d8659 100%);
+    background: linear-gradient(135deg, #1c361d 0%, #2a5029 100%);
     padding: 12px 24px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 2px 8px rgba(30, 126, 52, 0.15);
-    position: sticky;
+    box-shadow: 0 2px 8px rgba(28, 54, 29, 0.15);
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
     height: var(--navbar-height);
 }
@@ -58,7 +60,7 @@
 }
 
 .navbar-user a {
-    color: #1e7e34;
+    color: #1c361d;
     text-decoration: none;
     font-weight: 600;
     padding: 8px 15px;
@@ -69,7 +71,7 @@
 }
 
 .navbar-user a:hover {
-    background: #1e7e34;
+    background: #1c361d;
     color: white;
 }
 

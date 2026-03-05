@@ -9,11 +9,11 @@
 }
 
 .stat-card {
-    background: linear-gradient(135deg, #1e7e34 0%, #2d8659 100%);
+    background: linear-gradient(135deg, #1c361d 0%, #2a5029 100%);
     color: white;
     padding: 25px;
     border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(30, 126, 52, 0.3);
+    box-shadow: 0 5px 15px rgba(28, 54, 29, 0.3);
 }
 
 .stat-card h3 {
@@ -88,7 +88,7 @@
 }
 
 .type-count {
-    background: #1e7e34;
+    background: #1c361d;
     color: white;
     padding: 4px 10px;
     border-radius: 20px;
@@ -108,12 +108,12 @@
     background: #f8f9fa;
     border-radius: 8px;
     margin-bottom: 10px;
-    border-left: 4px solid #1e7e34;
+    border-left: 4px solid #1c361d;
 }
 
 .schedule-time {
     min-width: 140px;
-    color: #1e7e34;
+    color: #1c361d;
     font-weight: 600;
 }
 

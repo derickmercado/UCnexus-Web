@@ -33,8 +33,8 @@
 
 .filter-select:focus {
     outline: none;
-    border-color: #1e7e34;
-    box-shadow: 0 0 0 2px rgba(30, 126, 52, 0.1);
+    border-color: #1c361d;
+    box-shadow: 0 0 0 2px rgba(28, 54, 29, 0.1);
 }
 
 /* ===== SCHEDULE CARDS GRID ===== */
@@ -50,7 +50,7 @@
     flex-direction: column;
     background: white;
     border: 1px solid #e8f5e9;
-    border-left: 4px solid #1e7e34;
+    border-left: 4px solid #1c361d;
     border-radius: 8px;
     padding: 16px;
     position: relative;
@@ -77,7 +77,7 @@
 
 .time-slot {
     font-weight: 700;
-    color: #1e7e34;
+    color: #1c361d;
     font-size: 14px;
     margin: 0;
     background: #e8f5e9;
@@ -216,5 +216,321 @@
     .btn-small {
         padding: 5px 10px;
         font-size: 11px;
+    }
+}
+
+/* ===== VIEW MODE TOGGLE ===== */
+.view-mode-toggle {
+    border: 1px solid #c8e6c9;
+}
+
+.view-mode-btn {
+    font-family: inherit;
+}
+
+.view-mode-btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.view-mode-btn.active {
+    box-shadow: 0 2px 4px rgba(28, 54, 29, 0.2);
+}
+
+/* ===== BLOCK CARDS GRID ===== */
+.block-grid {
+    margin-top: 16px;
+}
+
+.block-card-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.block-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.block-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    border-color: #bdbdbd;
+}
+
+.block-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.03) 50%);
+}
+
+/* ===== BLOCK EXPANDED CONTENT ===== */
+.block-expanded-content {
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 2000px;
+    }
+}
+
+.block-course-item {
+    transition: box-shadow 0.2s;
+}
+
+.block-course-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+.block-expand-icon {
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+/* ===== BLOCK DETAILS MODAL ===== */
+.block-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 20px;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.block-modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.block-modal-header {
+    background: #1c361d;
+    color: white;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-shrink: 0;
+}
+
+.block-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 28px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.block-modal-close:hover {
+    opacity: 1;
+}
+
+.block-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.block-course-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #1c361d;
+    padding: 16px;
+    transition: box-shadow 0.2s;
+}
+
+.block-course-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.block-course-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.block-course-title {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.block-course-code {
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+}
+
+.block-course-number {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.block-course-details {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.block-course-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.block-detail-label {
+    font-size: 11px;
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.block-detail-value {
+    font-size: 14px;
+    color: #333;
+}
+
+.block-lab-section {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #ddd;
+}
+
+.block-lab-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f57f17;
+    text-transform: uppercase;
+    background: #fff8e1;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+/* ===== RESPONSIVE FOR BLOCK VIEW ===== */
+@media (max-width: 768px) {
+    .block-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .block-modal-content {
+        max-height: 90vh;
+        margin: 10px;
+    }
+    
+    .block-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .block-modal-body {
+        padding: 16px 20px;
+    }
+    
+    .block-course-details {
+        grid-template-columns: 1fr;
+    }
+    
+    .view-mode-toggle {
+        flex-wrap: wrap;
+    }
+    
+    .view-mode-btn {
+        flex: 1;
+        min-width: 120px;
+    }
+    
+    .block-expanded-content {
+        padding: 12px !important;
+    }
+    
+    .block-expanded-content .schedule-list {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .block-expanded-content .schedule-item > div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .block-modal-header h2 {
+        font-size: 20px;
+    }
+    
+    .block-course-title {
+        font-size: 15px;
+    }
+    
+    .block-detail-value {
+        font-size: 13px;
+    }
+    
+    .block-expanded-content .schedule-item {
+        padding: 12px !important;
+    }
+    
+    .block-expanded-content .schedule-item h4 {
+        font-size: 15px !important;
+    }
+    
+    .block-expanded-content .schedule-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .block-expanded-content .schedule-actions {
+        width: 100%;
+        justify-content: flex-start;
     }
 }

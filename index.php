@@ -70,6 +70,7 @@ if (isset($_GET['check_room_availability']) && isset($_SESSION['isLoggedIn']) &&
     $startTime = $_GET['start_time'] ?? '';
     $endTime = $_GET['end_time'] ?? '';
     $excludeId = isset($_GET['exclude_id']) ? intval($_GET['exclude_id']) : null;
+    $classType = $_GET['class_type'] ?? ''; // 'laboratory' or 'lecture' for CIT/CC courses
     
     // Parse days array
     $selectedDays = !empty($days) ? array_map('strtolower', explode('/', $days)) : [];
@@ -93,17 +94,63 @@ if (isset($_GET['check_room_availability']) && isset($_SESSION['isLoggedIn']) &&
                     continue;
                 }
                 
-                // Check if same room
-                if (($schedule['room'] ?? '') !== $roomLabel) {
+                // Check if room matches any of the schedule's room fields
+                $scheduleRoom = $schedule['room'] ?? '';
+                $scheduleLecRoom = $schedule['lec_room'] ?? '';
+                $scheduleLabRoom = $schedule['lab_room'] ?? ($schedule['labRoom'] ?? '');
+                
+                // Determine which room field matched and get corresponding days/times
+                $roomMatchType = null;
+                if ($scheduleRoom === $roomLabel) {
+                    $roomMatchType = 'main';
+                } elseif ($scheduleLecRoom === $roomLabel) {
+                    $roomMatchType = 'lec';
+                } elseif ($scheduleLabRoom === $roomLabel) {
+                    $roomMatchType = 'lab';
+                }
+                
+                if ($roomMatchType === null) {
                     continue;
                 }
                 
-                // Check for day overlap
+                // Get the appropriate days and times based on which room matched
                 $scheduleDays = [];
-                if (!empty($schedule['days'])) {
-                    $scheduleDays = is_array($schedule['days']) 
-                        ? array_map('strtolower', $schedule['days']) 
-                        : array_map('strtolower', explode('/', $schedule['days']));
+                $existingStart = '';
+                $existingEnd = '';
+                $conflictInstructor = '';
+                
+                if ($roomMatchType === 'lec') {
+                    // Lecture room match - use lecture days/times
+                    $lecDays = $schedule['lec_days'] ?? '';
+                    if (!empty($lecDays)) {
+                        $scheduleDays = is_array($lecDays) 
+                            ? array_map('strtolower', $lecDays) 
+                            : array_map('strtolower', explode('/', $lecDays));
+                    }
+                    $existingStart = $schedule['lec_start_time'] ?? '';
+                    $existingEnd = $schedule['lec_end_time'] ?? '';
+                    $conflictInstructor = $schedule['instructor'] ?? '';
+                } elseif ($roomMatchType === 'lab') {
+                    // Lab room match - use lab days/times
+                    $labDays = $schedule['lab_days'] ?? ($schedule['labDays'] ?? '');
+                    if (!empty($labDays)) {
+                        $scheduleDays = is_array($labDays) 
+                            ? array_map('strtolower', $labDays) 
+                            : array_map('strtolower', explode('/', $labDays));
+                    }
+                    $existingStart = $schedule['lab_start_time'] ?? ($schedule['labStartTime'] ?? '');
+                    $existingEnd = $schedule['lab_end_time'] ?? ($schedule['labEndTime'] ?? '');
+                    $conflictInstructor = $schedule['lab_instructor'] ?? ($schedule['labInstructor'] ?? '');
+                } else {
+                    // Main room match - use regular days/times
+                    if (!empty($schedule['days'])) {
+                        $scheduleDays = is_array($schedule['days']) 
+                            ? array_map('strtolower', $schedule['days']) 
+                            : array_map('strtolower', explode('/', $schedule['days']));
+                    }
+                    $existingStart = $schedule['startTime'] ?? '';
+                    $existingEnd = $schedule['endTime'] ?? '';
+                    $conflictInstructor = $schedule['instructor'] ?? '';
                 }
                 
                 // If using days, check day overlap
@@ -115,10 +162,7 @@ if (isset($_GET['check_room_availability']) && isset($_SESSION['isLoggedIn']) &&
                     $dayOverlap = true;
                 }
                 
-                if ($dayOverlap) {
-                    $existingStart = $schedule['startTime'] ?? '';
-                    $existingEnd = $schedule['endTime'] ?? '';
-                    
+                if ($dayOverlap && !empty($existingStart) && !empty($existingEnd)) {
                     // Check for time overlap
                     if ($startTime < $existingEnd && $endTime > $existingStart) {
                         $available = false;
@@ -128,7 +172,7 @@ if (isset($_GET['check_room_availability']) && isset($_SESSION['isLoggedIn']) &&
                             'classCode' => $schedule['classCode'] ?? '',
                             'startTime' => date('g:i A', strtotime($existingStart)),
                             'endTime' => date('g:i A', strtotime($existingEnd)),
-                            'instructor' => $schedule['instructor'] ?? '',
+                            'instructor' => $conflictInstructor,
                             'days' => $conflictDays
                         ];
                         break;
@@ -137,13 +181,28 @@ if (isset($_GET['check_room_availability']) && isset($_SESSION['isLoggedIn']) &&
             }
         }
         
+        // Get room type
+        $roomType = $option['type'] ?? 'classroom';
+        
+        // Filter rooms based on class type (for CIT/CC courses)
+        $allowedByClassType = true;
+        if ($classType === 'laboratory') {
+            // Laboratory classes can only use computer-lab rooms
+            $allowedByClassType = ($roomType === 'computer-lab');
+        } elseif ($classType === 'lecture') {
+            // Lecture classes cannot use computer-lab rooms
+            $allowedByClassType = ($roomType !== 'computer-lab');
+        }
+        
         $result[] = [
             'value' => $option['value'],
             'label' => $roomLabel,
             'building' => $option['building'] ?? 'Unknown',
             'buildingFull' => $option['buildingFull'] ?? '',
             'floor' => $option['floor'] ?? 1,
+            'type' => $roomType,
             'available' => $available,
+            'allowedByClassType' => $allowedByClassType,
             'conflict' => $conflictInfo
         ];
     }
@@ -201,7 +260,7 @@ if (isset($_SESSION['loginError'])) {
     <link rel="stylesheet" href="css/ai-helper.css">
     <link rel="stylesheet" href="css/schedule.css">
 </head>
-<body>
+<body<?php echo !$isLoggedIn ? ' class="login-page"' : ''; ?>>
     <?php if (!$isLoggedIn): ?>
         <!-- Login Container -->
         <div id="loginContainer" class="login-wrapper">

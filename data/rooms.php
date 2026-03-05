@@ -345,7 +345,7 @@ function getRoomsAsOptions() {
     }
     
     $rooms = dbFetchAll("
-        SELECT r.id, r.name, r.capacity, r.floor, r.building_id, 
+        SELECT r.id, r.name, r.capacity, r.floor, r.building_id, r.type,
                b.name as building_name, b.full_name as building_full_name
         FROM rooms r
         LEFT JOIN buildings b ON r.building_id = b.id
@@ -361,7 +361,8 @@ function getRoomsAsOptions() {
             'label' => $roomNumber . ' - ' . $room['name'] . ' (' . $room['capacity'] . ' seats)',
             'building' => $room['building_name'] ?? $room['building_id'] ?? 'Unknown',
             'buildingFull' => $room['building_full_name'] ?? '',
-            'floor' => (int)$room['floor']
+            'floor' => (int)$room['floor'],
+            'type' => $room['type'] ?? 'classroom'
         ];
     }
     

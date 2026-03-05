@@ -357,8 +357,26 @@ function addSchedule($data) {
     $hasConflict = !empty($data['hasConflict']) ? 1 : 0;
     $conflictWith = !empty($data['conflictWith']) ? $data['conflictWith'] : null;
     
-    $sql = "INSERT INTO schedules (class_code, class_name, room_id, room_display, instructor, department_id, class_size, schedule_date, start_time, end_time, days, semester, school_year, has_conflict, conflict_with) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    // CIT/CC dual schedule fields
+    $isCITCC = !empty($data['isCITCC']) ? 1 : 0;
+    $lecRoom = !empty($data['lecRoom']) ? $data['lecRoom'] : null;
+    $lecInstructor = !empty($data['lecInstructor']) ? $data['lecInstructor'] : null;
+    $lecDays = !empty($data['lecDays']) ? str_replace('/', ',', $data['lecDays']) : null;
+    $lecStartTime = !empty($data['lecStartTime']) ? $data['lecStartTime'] : null;
+    $lecEndTime = !empty($data['lecEndTime']) ? $data['lecEndTime'] : null;
+    $labRoom = !empty($data['labRoom']) ? $data['labRoom'] : null;
+    $labInstructor = !empty($data['labInstructor']) ? $data['labInstructor'] : null;
+    $labDays = !empty($data['labDays']) ? str_replace('/', ',', $data['labDays']) : null;
+    $labStartTime = !empty($data['labStartTime']) ? $data['labStartTime'] : null;
+    $labEndTime = !empty($data['labEndTime']) ? $data['labEndTime'] : null;
+    
+    // Year Level, Term, Block
+    $yearLevel = !empty($data['yearLevel']) ? $data['yearLevel'] : null;
+    $term = !empty($data['term']) ? $data['term'] : null;
+    $block = !empty($data['block']) ? $data['block'] : null;
+    
+    $sql = "INSERT INTO schedules (class_code, class_name, room_id, room_display, instructor, department_id, class_size, schedule_date, start_time, end_time, days, semester, school_year, has_conflict, conflict_with, is_citcc, lec_room, lec_instructor, lec_days, lec_start_time, lec_end_time, lab_room, lab_instructor, lab_days, lab_start_time, lab_end_time, year_level, term, block) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     
     $id = dbInsert($sql, [
         $data['classCode'] ?? '',
@@ -375,7 +393,21 @@ function addSchedule($data) {
         $data['semester'] ?? '',
         $data['schoolYear'] ?? '',
         $hasConflict,
-        $conflictWith
+        $conflictWith,
+        $isCITCC,
+        $lecRoom,
+        $lecInstructor,
+        $lecDays,
+        $lecStartTime,
+        $lecEndTime,
+        $labRoom,
+        $labInstructor,
+        $labDays,
+        $labStartTime,
+        $labEndTime,
+        $yearLevel,
+        $term,
+        $block
     ]);
     
     return $id;
@@ -403,10 +435,31 @@ function updateSchedule($scheduleId, $data) {
     $roomId = !empty($data['roomId']) ? $data['roomId'] : null;
     $scheduleDate = !empty($data['date']) ? $data['date'] : null;
     
+    // CIT/CC dual schedule fields
+    $isCITCC = !empty($data['isCITCC']) ? 1 : 0;
+    $lecRoom = !empty($data['lecRoom']) ? $data['lecRoom'] : null;
+    $lecInstructor = !empty($data['lecInstructor']) ? $data['lecInstructor'] : null;
+    $lecDays = !empty($data['lecDays']) ? str_replace('/', ',', $data['lecDays']) : null;
+    $lecStartTime = !empty($data['lecStartTime']) ? $data['lecStartTime'] : null;
+    $lecEndTime = !empty($data['lecEndTime']) ? $data['lecEndTime'] : null;
+    $labRoom = !empty($data['labRoom']) ? $data['labRoom'] : null;
+    $labInstructor = !empty($data['labInstructor']) ? $data['labInstructor'] : null;
+    $labDays = !empty($data['labDays']) ? str_replace('/', ',', $data['labDays']) : null;
+    $labStartTime = !empty($data['labStartTime']) ? $data['labStartTime'] : null;
+    $labEndTime = !empty($data['labEndTime']) ? $data['labEndTime'] : null;
+    
+    // Year Level, Term, Block
+    $yearLevel = !empty($data['yearLevel']) ? $data['yearLevel'] : null;
+    $term = !empty($data['term']) ? $data['term'] : null;
+    $block = !empty($data['block']) ? $data['block'] : null;
+    
     $sql = "UPDATE schedules SET 
             class_code = ?, class_name = ?, room_id = ?, room_display = ?, instructor = ?, 
             department_id = ?, class_size = ?, schedule_date = ?, start_time = ?, end_time = ?, 
-            days = ?, semester = ?, school_year = ?
+            days = ?, semester = ?, school_year = ?,
+            is_citcc = ?, lec_room = ?, lec_instructor = ?, lec_days = ?, lec_start_time = ?, lec_end_time = ?,
+            lab_room = ?, lab_instructor = ?, lab_days = ?, lab_start_time = ?, lab_end_time = ?,
+            year_level = ?, term = ?, block = ?
             WHERE id = ?";
     
     dbExecute($sql, [
@@ -423,6 +476,20 @@ function updateSchedule($scheduleId, $data) {
         $days,
         $data['semester'] ?? '',
         $data['schoolYear'] ?? '',
+        $isCITCC,
+        $lecRoom,
+        $lecInstructor,
+        $lecDays,
+        $lecStartTime,
+        $lecEndTime,
+        $labRoom,
+        $labInstructor,
+        $labDays,
+        $labStartTime,
+        $labEndTime,
+        $yearLevel,
+        $term,
+        $block,
         $scheduleId
     ]);
     
@@ -483,6 +550,18 @@ function formatScheduleFromDB($row) {
         $daysArray = [];
     }
     
+    // Format lecture days
+    $lecDaysRaw = $row['lec_days'] ?? '';
+    if ($lecDaysRaw) {
+        $lecDaysRaw = str_replace(',', '/', $lecDaysRaw);
+    }
+    
+    // Format lab days
+    $labDaysRaw = $row['lab_days'] ?? '';
+    if ($labDaysRaw) {
+        $labDaysRaw = str_replace(',', '/', $labDaysRaw);
+    }
+    
     return [
         'id' => (int)$row['id'],
         'classCode' => $row['class_code'],
@@ -499,6 +578,22 @@ function formatScheduleFromDB($row) {
         'semester' => $row['semester'],
         'schoolYear' => $row['school_year'],
         'hasConflict' => !empty($row['has_conflict']),
-        'conflictWith' => $row['conflict_with'] ?? null
+        'conflictWith' => $row['conflict_with'] ?? null,
+        // CIT/CC dual schedule fields
+        'isCITCC' => !empty($row['is_citcc']),
+        'lecRoom' => $row['lec_room'] ?? null,
+        'lecInstructor' => $row['lec_instructor'] ?? null,
+        'lecDays' => $lecDaysRaw,
+        'lecStartTime' => $row['lec_start_time'] ? substr($row['lec_start_time'], 0, 5) : null,
+        'lecEndTime' => $row['lec_end_time'] ? substr($row['lec_end_time'], 0, 5) : null,
+        'labRoom' => $row['lab_room'] ?? null,
+        'labInstructor' => $row['lab_instructor'] ?? null,
+        'labDays' => $labDaysRaw,
+        'labStartTime' => $row['lab_start_time'] ? substr($row['lab_start_time'], 0, 5) : null,
+        'labEndTime' => $row['lab_end_time'] ? substr($row['lab_end_time'], 0, 5) : null,
+        // Year Level, Term, Block
+        'yearLevel' => $row['year_level'] ?? null,
+        'term' => $row['term'] ?? null,
+        'block' => $row['block'] ?? null
     ];
 }
